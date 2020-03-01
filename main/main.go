@@ -5,6 +5,7 @@ import (
 	"github.com/AntonParaskiv/mockGen/domain/Interface"
 	"github.com/AntonParaskiv/mockGen/domain/Method"
 	"github.com/AntonParaskiv/mockGen/domain/Variable"
+	"github.com/AntonParaskiv/mockGen/infrastructure/FileStorage"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -12,11 +13,23 @@ import (
 )
 
 func main() {
+	// TODO: init components
+	fileStorageFactory := FileStorage.NewFactory()
+
 	// TODO: arg get package path
+	fileName := "examples/ManagerInterface/Manager.go"
 
 	// TODO: get package ast
+
+	fileStorage := fileStorageFactory.Create(fileName)
+	fileData, err := fileStorage.ReadFile()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "examples/ManagerInterface/Manager.go", nil, 0)
+	f, err := parser.ParseFile(fset, "", fileData, 0)
 	if err != nil {
 		fmt.Println("parse failed:", err.Error())
 		return
