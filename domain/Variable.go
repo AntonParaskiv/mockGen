@@ -1,4 +1,4 @@
-package Variable
+package domain
 
 type Variable struct {
 	Name string
