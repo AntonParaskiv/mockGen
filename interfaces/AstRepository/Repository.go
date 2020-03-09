@@ -1,13 +1,11 @@
 package AstRepository
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/AntonParaskiv/mockGen/domain"
 	"github.com/AntonParaskiv/mockGen/interfaces/PackageStorageInterface"
 	"go/ast"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"path/filepath"
 )
@@ -63,17 +61,18 @@ func (r *Repository) ScanGoCodeFile(path string) (file *domain.File, err error) 
 		return
 	}
 
-	fileAst.Scope.
+	//fileAst.Scope.
 
-	fileSetWrite := token.NewFileSet()
-	var buf bytes.Buffer
-	err = printer.Fprint(&buf, fileSetWrite, fileAst)
-	if err != nil {
-		err = fmt.Errorf("print ast failed: %w", err)
-		return
-	}
+	//fileSetWrite := token.NewFileSet()
+	//var buf bytes.Buffer
+	//err = printer.Fprint(&buf, fileSetWrite, fileAst)
+	//if err != nil {
+	//	err = fmt.Errorf("print ast failed: %w", err)
+	//	return
+	//}
+	//
+	//return
 
-	return
 	file = domain.NewFile()
 	file.Name = filepath.Base(path)
 	file.InterfaceList = getInterfaceList(fileAst)
