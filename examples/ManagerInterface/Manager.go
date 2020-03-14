@@ -5,6 +5,6 @@ type Manager interface {
 	SignIn(accountId int64, password string) (nickName string, err error)
 }
 
-type factory interface {
+type Factory interface {
 	Create(accountId int64) (manager *Manager)
 }
