@@ -25,8 +25,8 @@ func createConstructorAndTest(structSpec *ast.TypeSpec, packageName string) (con
 	structName := getNodeName(structSpec)
 	receiverName := getReceiverName(structName)
 	functionName := createNewName(structName, packageName)
-	namedPointerToStruct := createFieldNamedPointerStruct(structName, receiverName)
-	constructorDecl = createConstructor(structName, receiverName, functionName, namedPointerToStruct)
+	fieldNamedPointerStruct := createFieldNamedPointerStruct(structName, receiverName)
+	constructorDecl = createConstructor(structName, receiverName, functionName, fieldNamedPointerStruct)
 
 	testFunctionName := createTestNewName(functionName)
 	wantReceiver := "want" + toPublic(receiverName)
@@ -37,45 +37,21 @@ func createConstructorAndTest(structSpec *ast.TypeSpec, packageName string) (con
 	return
 }
 
-func createConstructor(structName, receiverName, functionName string, namedPointerToStruct *ast.Field) (constructorDecl *ast.FuncDecl) {
-	constructorDecl = &ast.FuncDecl{
-		Name: &ast.Ident{
-			Name: functionName,
-		},
-		Type: &ast.FuncType{
-			Params: &ast.FieldList{},
-			Results: &ast.FieldList{
-				List: []*ast.Field{
-					namedPointerToStruct,
-				},
-			},
-		},
-		Body: &ast.BlockStmt{
-			List: []ast.Stmt{
-				&ast.AssignStmt{
-					Lhs: []ast.Expr{
-						&ast.Ident{
-							Name: receiverName,
-						},
-					},
-					Tok: token.ASSIGN,
-					Rhs: []ast.Expr{
-						&ast.CallExpr{
-							Fun: &ast.Ident{
-								Name: "new",
-							},
-							Args: []ast.Expr{
-								&ast.Ident{
-									Name: structName,
-								},
-							},
-							Ellipsis: token.NoPos,
-						},
-					},
-				},
-				&ast.ReturnStmt{},
-			},
-		},
-	}
+func createConstructor(structName, receiverName, functionName string, fieldNamedPointerStruct *ast.Field) (constructorDecl *ast.FuncDecl) {
+	name := createName(functionName)
+	args := createFieldList()
+	results := createFieldList(fieldNamedPointerStruct)
+
+	// s = new(Struct)
+	lineSAssignNewStruct := createAssignStmt(
+		// s
+		createExprList(createName(receiverName)),
+		// =
+		token.ASSIGN,
+		// new(Struct)
+		createExprList(createCallExpr(createName("new"), createName(structName))),
+	)
+
+	constructorDecl = createFuncDecl(name, args, results, lineSAssignNewStruct, returnStmt)
 	return
 }

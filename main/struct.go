@@ -2,6 +2,7 @@ package main
 
 import (
 	"go/ast"
+	"go/token"
 )
 
 // Struct -> s
@@ -47,5 +48,10 @@ func createStructFromInterfaceSpec(interfaceSpec *ast.TypeSpec) (structSpec *ast
 		structSpec = createStructSpec(structName, fieldList)
 		return
 	}
+	return
+}
+
+func initStructLiteral(structName string) (structLiteral *ast.UnaryExpr) {
+	structLiteral = createUnaryExpr(token.AND, createCompositeLit(createName(structName)))
 	return
 }

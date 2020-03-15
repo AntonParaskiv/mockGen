@@ -2,6 +2,14 @@ package main
 
 import "go/ast"
 
+func createField(name string, Type ast.Expr) (field *ast.Field) {
+	field = &ast.Field{
+		Names: createNames(name),
+		Type:  Type,
+	}
+	return
+}
+
 func createFieldFromExpr(expr ast.Expr) (field *ast.Field) {
 	field = &ast.Field{
 		Type: expr,
@@ -16,6 +24,16 @@ func isFieldExistInFieldList(fieldList []*ast.Field, wantField *ast.Field) (isEx
 			isExist = true
 			return
 		}
+	}
+	return
+}
+
+func createFieldList(fields ...*ast.Field) (fieldList *ast.FieldList) {
+	fieldList = &ast.FieldList{
+		List: []*ast.Field{},
+	}
+	for _, field := range fields {
+		fieldList.List = append(fieldList.List, field)
 	}
 	return
 }
