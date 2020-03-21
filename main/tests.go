@@ -64,42 +64,6 @@ func createTestName(name string) (testName *ast.KeyValueExpr) {
 	return
 }
 
-func createTestRowInitStruct(wantReceiver, structName string) (testRow *ast.CompositeLit) {
-	testRow = createCompositeLit(nil,
-		createTestName(`"Struct init"`),
-		createKeyValueExpr(
-			wantReceiver,
-			initStructLiteral(structName),
-		),
-	)
-	return
-}
-
-func createTestRowSetting(wantReceiver, structName string, field *ast.Field) (testRow *ast.CompositeLit) {
-
-	// field: "myField"
-	fieldKeyValue := createKeyValueExpr(
-		getNodeName(field),
-		generateTestValue(field),
-	)
-
-	testRow = createCompositeLit(nil,
-		createTestName(`"Setting"`),
-		createKeyValueExpr(
-			"args",
-			createCompositeLit(
-				createName("args"),
-				fieldKeyValue,
-			),
-		),
-		createKeyValueExpr(
-			wantReceiver,
-			initStructLiteral(structName, fieldKeyValue),
-		),
-	)
-	return
-}
-
 func generateTestValue(field *ast.Field) (basicLit *ast.BasicLit) {
 	fieldTypeIdent, ok := field.Type.(*ast.Ident)
 	if !ok {

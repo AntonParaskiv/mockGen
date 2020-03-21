@@ -38,6 +38,17 @@ func createConstructorTestTable(structName, wantReceiver string, pointerStruct *
 	return
 }
 
+func createTestRowInitStruct(wantReceiver, structName string) (testRow *ast.CompositeLit) {
+	testRow = createCompositeLit(nil,
+		createTestName(`"Struct init"`),
+		createKeyValueExpr(
+			wantReceiver,
+			initStructLiteral(structName),
+		),
+	)
+	return
+}
+
 func createConstructorStmtTestsDeclare(structName, wantReceiver string, pointerStruct *ast.StarExpr) (stmtTestsDeclare *ast.AssignStmt) {
 	testTable := createConstructorTestTable(structName, wantReceiver, pointerStruct)
 

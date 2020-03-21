@@ -57,6 +57,31 @@ func createSetterTestTable(structName, wantReceiver string, field *ast.Field, po
 	return
 }
 
+func createTestRowSetting(wantReceiver, structName string, field *ast.Field) (testRow *ast.CompositeLit) {
+
+	// field: "myField"
+	fieldKeyValue := createKeyValueExpr(
+		getNodeName(field),
+		generateTestValue(field),
+	)
+
+	testRow = createCompositeLit(nil,
+		createTestName(`"Setting"`),
+		createKeyValueExpr(
+			"args",
+			createCompositeLit(
+				createName("args"),
+				fieldKeyValue,
+			),
+		),
+		createKeyValueExpr(
+			wantReceiver,
+			initStructLiteral(structName, fieldKeyValue),
+		),
+	)
+	return
+}
+
 func createSetterStmtTestsRun(functionName, receiverName, wantReceiver, gotReceiver, structName, fieldName string) (runRangeStmt *ast.RangeStmt) {
 	ttWantReceiver := createTTSelector(wantReceiver)
 	compareResultInit := createAssignStmt(

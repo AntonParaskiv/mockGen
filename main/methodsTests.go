@@ -18,7 +18,7 @@ func createMethodTest(paramList, resultList []*ast.Field, structName, methodName
 	methodTestDecl = createFuncDecl(nil, name, args, nil,
 		createDeclStruct("fields", resultList...),
 		createDeclStruct("args", paramList...),
-		createMethodStmtTestsDeclare(structName, wantReceiver, pointerStruct, resultList),
+		createMethodStmtTestsDeclare(structName, wantReceiver, pointerStruct, paramList, resultList),
 		createMethodStmtTestsRun(methodName, receiverName, wantReceiver, "got", structName, paramList, resultList),
 		returnStmt,
 	)
@@ -26,8 +26,8 @@ func createMethodTest(paramList, resultList []*ast.Field, structName, methodName
 	return
 }
 
-func createMethodStmtTestsDeclare(structName, wantReceiver string, pointerStruct *ast.StarExpr, resultList []*ast.Field) (stmtTestsDeclare *ast.AssignStmt) {
-	testTable := createMethodTestTable(structName, wantReceiver, pointerStruct, resultList)
+func createMethodStmtTestsDeclare(structName, wantReceiver string, pointerStruct *ast.StarExpr, paramList, resultList []*ast.Field) (stmtTestsDeclare *ast.AssignStmt) {
+	testTable := createMethodTestTable(structName, wantReceiver, pointerStruct, paramList, resultList)
 
 	// test := []struct{...}{...}
 	stmtTestsDeclare = createAssignStmt(
@@ -42,7 +42,7 @@ func createMethodStmtTestsDeclare(structName, wantReceiver string, pointerStruct
 	return
 }
 
-func createMethodTestTable(structName, wantReceiver string, pointerStruct *ast.StarExpr, methodResultList []*ast.Field) (testTable *ast.CompositeLit) {
+func createMethodTestTable(structName, wantReceiver string, pointerStruct *ast.StarExpr, methodParamList, methodResultList []*ast.Field) (testTable *ast.CompositeLit) {
 	testTableFields := make([]*ast.Field, 0)
 	testTableFields = append(testTableFields,
 		// name string
@@ -65,13 +65,81 @@ func createMethodTestTable(structName, wantReceiver string, pointerStruct *ast.S
 	)
 
 	testTableRows := createExprList(
-	// Success
-	//createTestRowSetting(wantReceiver, structName, field),
+		// Success
+		createTestRowMethod(wantReceiver, structName, methodParamList, methodResultList),
 	)
 	testTable = createTestTable(
 		createFieldList(testTableFields...),
 		testTableRows,
 	)
+	return
+}
+
+func createTestRowMethod(wantReceiver, structName string, methodParamList, methodResultList []*ast.Field) (testRow *ast.CompositeLit) {
+
+	// field: "myField"
+	fieldsKeyValue := make([]ast.Expr, 0)
+	for _, result := range methodResultList {
+		fieldKeyValue := createKeyValueExpr(
+			getNodeName(result),
+			generateTestValue(result),
+		)
+		fieldsKeyValue = append(fieldsKeyValue, fieldKeyValue)
+	}
+
+	// arg: "myArg"
+	argsKeyValue := make([]ast.Expr, 0)
+	for _, param := range methodParamList {
+		fieldKeyValue := createKeyValueExpr(
+			getNodeName(param),
+			generateTestValue(param),
+		)
+		argsKeyValue = append(argsKeyValue, fieldKeyValue)
+	}
+
+	// result struct fields = fields + args
+	resultFields := make([]ast.Expr, 0)
+	resultFields = append(resultFields, argsKeyValue...)
+	resultFields = append(resultFields, fieldsKeyValue...)
+
+	testRowBody := make([]ast.Expr, 0)
+	testRowBody = append(testRowBody,
+		createTestName(`"Success"`),
+		createKeyValueExpr(
+			"fields",
+			createCompositeLit(
+				createName("fields"),
+				fieldsKeyValue...,
+			),
+		),
+		createKeyValueExpr(
+			"args",
+			createCompositeLit(
+				createName("args"),
+				argsKeyValue...,
+			),
+		),
+	)
+
+	for _, result := range methodResultList {
+		wantResult := "want" + toPublic(getNodeName(result))
+		testRowBody = append(testRowBody,
+			createKeyValueExpr(
+				wantResult,
+				generateTestValue(result),
+			),
+		)
+	}
+
+	testRowBody = append(testRowBody,
+		createKeyValueExpr(
+			wantReceiver,
+			initStructLiteral(structName, resultFields...),
+			//initStructLiteral(structName),
+		),
+	)
+
+	testRow = createCompositeLit(nil, testRowBody...)
 	return
 }
 
@@ -143,7 +211,8 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 	// compare wantResults
 	for _, param := range methodResultList {
 		gotResult := "got" + toPublic(getNodeName(param))
-		ttWantResult := createTTSelector(wantReceiver)
+		wantResult := "want" + toPublic(getNodeName(param))
+		ttWantResult := createTTSelector(wantResult)
 
 		// !reflect.DeepEqual(gotField, tt.wantField)
 		compareResultCondition := createNotDeepEqualExpr(
@@ -153,8 +222,8 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 
 		// t.Errorf("gotField = %v, want %v", gotField, tt.wantField)
 		compareResultErrorf := createTestCompareResultErrorf(
-			getNodeName(param),
-			wantReceiver,
+			gotResult,
+			"want",
 			createName(gotResult),
 			ttWantResult,
 		)
