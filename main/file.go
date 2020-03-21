@@ -84,7 +84,6 @@ func createWFiles(rFiles map[string]*ast.File) (wFiles map[string]*ast.File, err
 			}
 
 			// gen methods
-			// TODO: gen test
 			methodsDecls, methodsTestsDecls := createMethodsAndTests(structSpec, interfaceSpec)
 			for _, methodsDecl := range methodsDecls {
 				wFile.Decls = append(wFile.Decls, methodsDecl)
