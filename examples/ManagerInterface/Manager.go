@@ -1,8 +1,10 @@
 package ManagerInterface
 
+// TODO: types: err, custom, self
+
 type Manager interface {
 	Registration(nickName string, password string) (accountId int64)
-	SignIn(accountId int64, password string) (nickName string, err error)
+	SignIn(accountId int64, password string) (nickName string)
 }
 
 type Factory interface {
