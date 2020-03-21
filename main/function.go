@@ -10,8 +10,9 @@ func createFunctionType(params, results *ast.FieldList) (funcType *ast.FuncType)
 	return
 }
 
-func createFuncDecl(name *ast.Ident, args, results *ast.FieldList, bodyLines ...ast.Stmt) (constructorDecl *ast.FuncDecl) {
+func createFuncDecl(recvs *ast.FieldList, name *ast.Ident, args, results *ast.FieldList, bodyLines ...ast.Stmt) (constructorDecl *ast.FuncDecl) {
 	constructorDecl = &ast.FuncDecl{
+		Recv: recvs,
 		Name: name,
 		Type: createFunctionType(args, results),
 		Body: &ast.BlockStmt{

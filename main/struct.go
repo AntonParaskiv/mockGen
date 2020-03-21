@@ -28,13 +28,11 @@ func createFieldNamedPointerStruct(structName, receiverName string) (field *ast.
 	return
 }
 
-func createStructSpec(name string, fieldList []*ast.Field) (structSpec *ast.TypeSpec) {
+func createStructSpec(name string, fields ...*ast.Field) (structSpec *ast.TypeSpec) {
 	structSpec = &ast.TypeSpec{
 		Name: createName(name),
 		Type: &ast.StructType{
-			Fields: &ast.FieldList{
-				List: fieldList,
-			},
+			Fields: createFieldList(fields...),
 		},
 	}
 	return
@@ -45,13 +43,13 @@ func createStructFromInterfaceSpec(interfaceSpec *ast.TypeSpec) (structSpec *ast
 	case *ast.InterfaceType:
 		structName := getNodeName(interfaceSpec)
 		fieldList := createFieldListFromInterfaceMethods(specType)
-		structSpec = createStructSpec(structName, fieldList)
+		structSpec = createStructSpec(structName, fieldList...)
 		return
 	}
 	return
 }
 
-func initStructLiteral(structName string) (structLiteral *ast.UnaryExpr) {
-	structLiteral = createUnaryExpr(token.AND, createCompositeLit(createName(structName)))
+func initStructLiteral(structName string, elts ...ast.Expr) (structLiteral *ast.UnaryExpr) {
+	structLiteral = createUnaryExpr(token.AND, createCompositeLit(createName(structName), elts...))
 	return
 }

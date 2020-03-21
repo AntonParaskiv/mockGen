@@ -17,6 +17,8 @@ func getNodeName(node ast.Node) (name string) {
 		name = nodeItem.Name.Name
 	case *ast.Field:
 		name = nodeItem.Names[0].Name
+	case *ast.Ident:
+		name = nodeItem.Name
 	default:
 		panic(fmt.Sprintf("no getting name case for type %T", node))
 	}

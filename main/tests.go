@@ -75,6 +75,61 @@ func createTestRowInitStruct(wantReceiver, structName string) (testRow *ast.Comp
 	return
 }
 
+func createTestRowSetting(wantReceiver, structName string, field *ast.Field) (testRow *ast.CompositeLit) {
+
+	// field: "myField"
+	fieldKeyValue := createKeyValueExpr(
+		getNodeName(field),
+		generateTestValue(field),
+	)
+
+	testRow = createCompositeLit(nil,
+		createTestName(`"Setting"`),
+		createKeyValueExpr(
+			"args",
+			createCompositeLit(
+				createName("args"),
+				fieldKeyValue,
+			),
+		),
+		createKeyValueExpr(
+			wantReceiver,
+			initStructLiteral(structName, fieldKeyValue),
+		),
+	)
+	return
+}
+
+func generateTestValue(field *ast.Field) (basicLit *ast.BasicLit) {
+	fieldTypeIdent, ok := field.Type.(*ast.Ident)
+	if !ok {
+		basicLit = createBasicLit(`"// TODO: generate value"`, token.STRING)
+		return
+	}
+
+	fieldTypeName := getNodeName(fieldTypeIdent)
+
+	if fieldTypeName == "string" {
+		value := "my" + toPublic(getNodeName(field))
+		basicLit = createBasicLit(`"`+value+`"`, token.STRING)
+		return
+	}
+
+	if len(fieldTypeName) >= 3 && fieldTypeName[0:3] == "int" {
+		basicLit = createBasicLit("100", token.INT)
+		return
+	}
+
+	if len(fieldTypeName) >= 5 && fieldTypeName[0:5] == "float" {
+		basicLit = createBasicLit("100", token.INT)
+		return
+	}
+
+	// TODO: add other types
+	basicLit = createBasicLit(`"// TODO: generate value"`, token.STRING)
+	return
+}
+
 func createTestTable(fieldList *ast.FieldList, rows []ast.Expr) (testTable *ast.CompositeLit) {
 	testTable = createCompositeLit(
 		&ast.ArrayType{

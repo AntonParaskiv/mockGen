@@ -15,13 +15,10 @@ func createConstructorTest(structName, functionName, testFunctionName, wantRecei
 	args := createFieldList(namedPointerTestingT)
 	results := createFieldList()
 
-	constructorTestDecl = createFuncDecl(name, args, results)
-
-	stmtTestsDeclare := createStmtTestsDeclare(structName, wantReceiver, pointerStruct)
-	constructorTestDecl.Body.List = append(constructorTestDecl.Body.List, stmtTestsDeclare)
-
-	stmtTestsRun := createStmtTestsRun(functionName, wantReceiver, gotReceiver)
-	constructorTestDecl.Body.List = append(constructorTestDecl.Body.List, stmtTestsRun)
+	constructorTestDecl = createFuncDecl(nil, name, args, results,
+		createConstructorStmtTestsDeclare(structName, wantReceiver, pointerStruct),
+		createConstructorStmtTestsRun(functionName, wantReceiver, gotReceiver),
+	)
 
 	return
 }
@@ -41,7 +38,7 @@ func createConstructorTestTable(structName, wantReceiver string, pointerStruct *
 	return
 }
 
-func createStmtTestsDeclare(structName, wantReceiver string, pointerStruct *ast.StarExpr) (stmtTestsDeclare *ast.AssignStmt) {
+func createConstructorStmtTestsDeclare(structName, wantReceiver string, pointerStruct *ast.StarExpr) (stmtTestsDeclare *ast.AssignStmt) {
 	testTable := createConstructorTestTable(structName, wantReceiver, pointerStruct)
 
 	// test := []struct{...}{...}
@@ -57,7 +54,7 @@ func createStmtTestsDeclare(structName, wantReceiver string, pointerStruct *ast.
 	return
 }
 
-func createStmtTestsRun(functionName, wantReceiver, gotReceiver string) (runRangeStmt *ast.RangeStmt) {
+func createConstructorStmtTestsRun(functionName, wantReceiver, gotReceiver string) (runRangeStmt *ast.RangeStmt) {
 	ttWantReceiver := createTTSelector(wantReceiver)
 	compareResultInit := createAssignStmt(
 		createExprList(createName(gotReceiver)),

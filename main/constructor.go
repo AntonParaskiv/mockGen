@@ -52,6 +52,9 @@ func createConstructor(structName, receiverName, functionName string, fieldNamed
 		createExprList(createCallExpr(createName("new"), createName(structName))),
 	)
 
-	constructorDecl = createFuncDecl(name, args, results, lineSAssignNewStruct, returnStmt)
+	constructorDecl = createFuncDecl(nil, name, args, results,
+		lineSAssignNewStruct,
+		returnStmt,
+	)
 	return
 }

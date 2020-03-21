@@ -70,16 +70,18 @@ func createWFiles(rFiles map[string]*ast.File) (wFiles map[string]*ast.File, err
 			wFile.Decls = append(wFile.Decls, decl)
 
 			// gen constructor
-			// TODO: gen test
 			constructorDecl, constructorTestDecl := createConstructorAndTest(structSpec, unMockPackageName(mockPackageName))
 			wFile.Decls = append(wFile.Decls, constructorDecl)
 			wFileTest.Decls = append(wFileTest.Decls, constructorTestDecl)
 
 			// gen setters
 			// TODO: gen test
-			setterDecls := createSetters(structSpec)
+			setterDecls, setterTestDecls := createSettersAndTests(structSpec)
 			for _, setterDecl := range setterDecls {
 				wFile.Decls = append(wFile.Decls, setterDecl)
+			}
+			for _, setterTestDecl := range setterTestDecls {
+				wFileTest.Decls = append(wFileTest.Decls, setterTestDecl)
 			}
 
 			// gen methods
