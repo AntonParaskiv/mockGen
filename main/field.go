@@ -57,7 +57,8 @@ func createFieldListFromInterfaceMethods(interfaceType *ast.InterfaceType) (fiel
 	for _, field := range interfaceType.Methods.List {
 		switch methodType := field.Type.(type) {
 		case *ast.FuncType:
-			fieldList = createFieldListFromFunction(methodType)
+			methodFieldList := createFieldListFromFunction(methodType)
+			mergeUniqueFieldList(methodFieldList, &fieldList)
 		}
 	}
 	return

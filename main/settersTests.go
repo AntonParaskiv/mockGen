@@ -15,18 +15,12 @@ func createSetterTest(field *ast.Field, pointerStruct *ast.StarExpr, structName,
 	args := createFieldList(namedPointerTestingT)
 
 	setterTestDecl = createFuncDecl(nil, name, args, nil,
-		createDeclArgStruct(field),
+		createDeclStruct("args", field),
 		createSetterStmtTestsDeclare(structName, "want", field, pointerStruct),
 		createSetterStmtTestsRun(functionName, receiverName, "want", "got", structName, getNodeName(field)),
 		returnStmt,
 	)
 
-	return
-}
-
-func createDeclArgStruct(field *ast.Field) (declStmt *ast.DeclStmt) {
-	structSpec := createStructSpec("args", field)
-	declStmt = createDeclStmt(token.TYPE, structSpec)
 	return
 }
 

@@ -53,3 +53,9 @@ func initStructLiteral(structName string, elts ...ast.Expr) (structLiteral *ast.
 	structLiteral = createUnaryExpr(token.AND, createCompositeLit(createName(structName), elts...))
 	return
 }
+
+func createDeclStruct(structName string, field ...*ast.Field) (declStmt *ast.DeclStmt) {
+	structSpec := createStructSpec(structName, field...)
+	declStmt = createDeclStmt(token.TYPE, structSpec)
+	return
+}

@@ -5,87 +5,69 @@ import (
 	"go/token"
 )
 
-func createMethods(structSpec *ast.TypeSpec, interfaceSpec *ast.TypeSpec) (structMethodDecls []*ast.FuncDecl) {
+func createMethodsAndTests(structSpec *ast.TypeSpec, interfaceSpec *ast.TypeSpec) (methodDecls, methodTestDecls []*ast.FuncDecl) {
 	structName := getNodeName(structSpec)
 	receiverName := getReceiverName(structName)
-	namedPointerToStruct := createFieldNamedPointerStruct(structName, receiverName)
+	pointerStruct := createPointerStruct(structName)
+	namedPointerStruct := createFieldNamedPointerStruct(structName, receiverName)
 
-	structMethodDecls = make([]*ast.FuncDecl, 0)
+	methodDecls = make([]*ast.FuncDecl, 0)
+	methodTestDecls = make([]*ast.FuncDecl, 0)
 	for _, interfaceMethod := range interfaceSpec.Type.(*ast.InterfaceType).Methods.List {
 		methodName := getNodeName(interfaceMethod)
-		methodParams := interfaceMethod.Type.(*ast.FuncType).Params
-		methodResults := interfaceMethod.Type.(*ast.FuncType).Results
+		paramList := interfaceMethod.Type.(*ast.FuncType).Params.List
+		resultList := interfaceMethod.Type.(*ast.FuncType).Results.List
 
-		bodyList := make([]ast.Stmt, 0)
+		// create method
+		method := createMethod(paramList, resultList, methodName, receiverName, namedPointerStruct)
+		methodDecls = append(methodDecls, method)
 
-		for _, param := range interfaceMethod.Type.(*ast.FuncType).Params.List {
-			paramName := getNodeName(param)
-			setting := &ast.AssignStmt{
-				Lhs: []ast.Expr{
-					&ast.SelectorExpr{
-						X: &ast.Ident{
-							Name: receiverName,
-						},
-						Sel: &ast.Ident{
-							Name: paramName,
-						},
-					},
-				},
-				Tok: token.ASSIGN,
-				Rhs: []ast.Expr{
-					&ast.Ident{
-						Name: paramName,
-					},
-				},
-			}
-			bodyList = append(bodyList, setting)
-		}
-
-		for _, result := range interfaceMethod.Type.(*ast.FuncType).Results.List {
-			resultName := getNodeName(result)
-			returning := &ast.AssignStmt{
-				Lhs: []ast.Expr{
-					&ast.Ident{
-						Name: resultName,
-					},
-				},
-				Tok: token.ASSIGN,
-				Rhs: []ast.Expr{
-					&ast.SelectorExpr{
-						X: &ast.Ident{
-							Name: receiverName,
-						},
-						Sel: &ast.Ident{
-							Name: resultName,
-						},
-					},
-				},
-			}
-			bodyList = append(bodyList, returning)
-		}
-
-		returning := &ast.ReturnStmt{}
-		bodyList = append(bodyList, returning)
-
-		structMethod := &ast.FuncDecl{
-			Recv: &ast.FieldList{
-				List: []*ast.Field{
-					namedPointerToStruct,
-				},
-			},
-			Name: &ast.Ident{
-				Name: methodName,
-			},
-			Type: &ast.FuncType{
-				Func:    0,
-				Params:  methodParams,
-				Results: methodResults,
-			},
-			Body: &ast.BlockStmt{
-				List: bodyList,
-			},
-		}
-		structMethodDecls = append(structMethodDecls, structMethod)
+		// create test
+		testMethodName := createTestMethodName(structName, methodName)
+		methodTestDecl := createMethodTest(paramList, resultList, structName, methodName, testMethodName, receiverName, pointerStruct, namedPointerStruct)
+		methodTestDecls = append(methodTestDecls, methodTestDecl)
 	}
+	return
+}
+
+func createMethod(paramList, resultList []*ast.Field, methodName, receiverName string, namedPointerStruct *ast.Field) (method *ast.FuncDecl) {
+	name := createName(methodName)
+	args := createFieldList(paramList...)
+	results := createFieldList(resultList...)
+	recvs := createFieldList(namedPointerStruct)
+
+	// prepare method body lines
+	bodyList := make([]ast.Stmt, 0)
+	for _, param := range paramList {
+		// s.field = field
+		lineSFieldAssignField := createAssignStmt(
+			// s.field
+			createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(param)))),
+			// =
+			token.ASSIGN,
+			// field
+			createExprList(createName(getNodeName(param))),
+		)
+		bodyList = append(bodyList, lineSFieldAssignField)
+	}
+	for _, result := range resultList {
+		// field = s.field
+		lineFieldAssignSField := createAssignStmt(
+			// field
+			createExprList(createName(getNodeName(result))),
+			// =
+			token.ASSIGN,
+			// s.field
+			createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(result)))),
+		)
+		bodyList = append(bodyList, lineFieldAssignSField)
+	}
+	bodyList = append(bodyList, returnStmt)
+
+	// create method
+	method = createFuncDecl(recvs, name, args, results,
+		bodyList...,
+	)
+
 	return
 }

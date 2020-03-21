@@ -75,7 +75,6 @@ func createWFiles(rFiles map[string]*ast.File) (wFiles map[string]*ast.File, err
 			wFileTest.Decls = append(wFileTest.Decls, constructorTestDecl)
 
 			// gen setters
-			// TODO: gen test
 			setterDecls, setterTestDecls := createSettersAndTests(structSpec)
 			for _, setterDecl := range setterDecls {
 				wFile.Decls = append(wFile.Decls, setterDecl)
@@ -86,9 +85,12 @@ func createWFiles(rFiles map[string]*ast.File) (wFiles map[string]*ast.File, err
 
 			// gen methods
 			// TODO: gen test
-			methodsDecls := createMethods(structSpec, interfaceSpec)
+			methodsDecls, methodsTestsDecls := createMethodsAndTests(structSpec, interfaceSpec)
 			for _, methodsDecl := range methodsDecls {
 				wFile.Decls = append(wFile.Decls, methodsDecl)
+			}
+			for _, methodsTest := range methodsTestsDecls {
+				wFileTest.Decls = append(wFileTest.Decls, methodsTest)
 			}
 		}
 
