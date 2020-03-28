@@ -46,11 +46,11 @@ func createSetterTestTable(structName, wantReceiver string, field *ast.Field, po
 		createField("name", createName("string")),
 		// args string
 		createField("args", createName("args")),
-		// wantS *Struct
+		// wantS *Mock
 		createField(wantReceiver, pointerStruct),
 	)
 	testTableRows := createExprList(
-		// Struct init
+		// Mock init
 		createTestRowSetting(wantReceiver, structName, field),
 	)
 	testTable = createTestTable(testTableFieldList, testTableRows)
@@ -59,7 +59,7 @@ func createSetterTestTable(structName, wantReceiver string, field *ast.Field, po
 
 func createTestRowSetting(wantReceiver, structName string, field *ast.Field) (testRow *ast.CompositeLit) {
 
-	// field: "myField"
+	// Field: "myField"
 	fieldKeyValue := createKeyValueExpr(
 		getNodeName(field),
 		generateTestValue(field),
@@ -109,13 +109,13 @@ func createSetterStmtTestsRun(functionName, receiverName, wantReceiver, gotRecei
 		ttWantReceiver,
 	)
 
-	// s := &Struct{}
+	// s := &Mock{}
 	lineSDefineStructLiteral := createAssignStmt(
 		// s
 		createExprList(createName(receiverName)),
 		// :=
 		token.DEFINE,
-		// &Struct{}
+		// &Mock{}
 		createExprList(initStructLiteral(structName)),
 	)
 

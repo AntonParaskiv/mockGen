@@ -27,11 +27,11 @@ func createConstructorTestTable(structName, wantReceiver string, pointerStruct *
 	testTableFieldList := createFieldList(
 		// name string
 		createField("name", createName("string")),
-		// wantS *Struct
+		// wantS *Mock
 		createField(wantReceiver, pointerStruct),
 	)
 	testTableRows := createExprList(
-		// Struct init
+		// Mock init
 		createTestRowInitStruct(wantReceiver, structName),
 	)
 	testTable = createTestTable(testTableFieldList, testTableRows)
@@ -40,7 +40,7 @@ func createConstructorTestTable(structName, wantReceiver string, pointerStruct *
 
 func createTestRowInitStruct(wantReceiver, structName string) (testRow *ast.CompositeLit) {
 	testRow = createCompositeLit(nil,
-		createTestName(`"Struct init"`),
+		createTestName(`"Mock init"`),
 		createKeyValueExpr(
 			wantReceiver,
 			initStructLiteral(structName),

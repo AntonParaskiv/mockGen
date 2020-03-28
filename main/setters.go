@@ -42,13 +42,13 @@ func createSetter(field, namedPointerStruct *ast.Field, pointerStruct *ast.StarE
 	results := createFieldList(createFieldFromExpr(pointerStruct))
 	recvs := createFieldList(namedPointerStruct)
 
-	// s.field = field
+	// s.Field = Field
 	lineSFieldAssignField := createAssignStmt(
-		// s.field
+		// s.Field
 		createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(field)))),
 		// =
 		token.ASSIGN,
-		// field
+		// Field
 		createExprList(createName(getNodeName(field))),
 	)
 

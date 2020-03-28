@@ -39,25 +39,25 @@ func createMethod(paramList, resultList []*ast.Field, methodName, receiverName s
 	// prepare method body lines
 	bodyList := make([]ast.Stmt, 0)
 	for _, param := range paramList {
-		// s.field = field
+		// s.Field = Field
 		lineSFieldAssignField := createAssignStmt(
-			// s.field
+			// s.Field
 			createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(param)))),
 			// =
 			token.ASSIGN,
-			// field
+			// Field
 			createExprList(createName(getNodeName(param))),
 		)
 		bodyList = append(bodyList, lineSFieldAssignField)
 	}
 	for _, result := range resultList {
-		// field = s.field
+		// Field = s.Field
 		lineFieldAssignSField := createAssignStmt(
-			// field
+			// Field
 			createExprList(createName(getNodeName(result))),
 			// =
 			token.ASSIGN,
-			// s.field
+			// s.Field
 			createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(result)))),
 		)
 		bodyList = append(bodyList, lineFieldAssignSField)

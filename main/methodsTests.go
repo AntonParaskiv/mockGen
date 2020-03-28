@@ -60,7 +60,7 @@ func createMethodTestTable(structName, wantReceiver string, pointerStruct *ast.S
 	}
 
 	testTableFields = append(testTableFields,
-		// wantS *Struct
+		// wantS *Mock
 		createField(wantReceiver, pointerStruct),
 	)
 
@@ -77,7 +77,7 @@ func createMethodTestTable(structName, wantReceiver string, pointerStruct *ast.S
 
 func createTestRowMethod(wantReceiver, structName string, methodParamList, methodResultList []*ast.Field) (testRow *ast.CompositeLit) {
 
-	// field: "myField"
+	// Field: "myField"
 	fieldsKeyValue := make([]ast.Expr, 0)
 	for _, result := range methodResultList {
 		fieldKeyValue := createKeyValueExpr(
@@ -163,13 +163,13 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 	}
 
 	runStmts = append(runStmts,
-		// s := &Struct{ field: field }
+		// s := &Mock{ Field: Field }
 		createAssignStmt(
 			// s
 			createExprList(createName(receiverName)),
 			// :=
 			token.DEFINE,
-			// &Struct{ field: field }
+			// &Mock{ Field: Field }
 			createExprList(
 				initStructLiteral(structName, settingFieldsExprs...),
 			),
@@ -252,7 +252,7 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 		ttWantReceiver,
 	)
 	runStmts = append(runStmts,
-		// if !reflect.DeepEqual(s, tt.wantStruct) { t.Errorf("Struct = %v, want %v", s, tt.wantStruct) }
+		// if !reflect.DeepEqual(s, tt.wantStruct) { t.Errorf("Mock = %v, want %v", s, tt.wantStruct) }
 		createIfStmt(
 			nil,
 			compareStructCondition,

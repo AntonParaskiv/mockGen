@@ -42,13 +42,13 @@ func createConstructor(structName, receiverName, functionName string, fieldNamed
 	args := createFieldList()
 	results := createFieldList(fieldNamedPointerStruct)
 
-	// s = new(Struct)
+	// s = new(Mock)
 	lineSAssignNewStruct := createAssignStmt(
 		// s
 		createExprList(createName(receiverName)),
 		// =
 		token.ASSIGN,
-		// new(Struct)
+		// new(Mock)
 		createExprList(createCallExpr(createName("new"), createName(structName))),
 	)
 

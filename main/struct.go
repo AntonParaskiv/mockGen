@@ -5,13 +5,13 @@ import (
 	"go/token"
 )
 
-// Struct -> s
+// Mock -> s
 func getReceiverName(name string) (receiverName string) {
 	receiverName = toPrivate(getFirstLetter(name))
 	return
 }
 
-// Struct -> *Struct
+// Mock -> *Mock
 func createPointerStruct(structName string) (pointerStruct *ast.StarExpr) {
 	pointerStruct = &ast.StarExpr{
 		X: &ast.Ident{
