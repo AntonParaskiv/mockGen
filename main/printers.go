@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/tools/imports"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,22 +16,25 @@ type GoCodePackage struct {
 
 type GoCodeFile struct {
 	Name          string
-	ImportList    []string
 	InterfaceList []*Interface
 	MockList      []*Mock
 	Code          string
+	ImportList    []string
 }
 
 type Interface struct {
 	Name       string
 	MethodList []*Method
+	ImportList []string
 }
 
 type Mock struct {
-	Struct      *Struct
-	Constructor *Constructor
-	SetterList  []*Setter
-	MethodList  []*Method
+	Struct         *Struct
+	Constructor    *Constructor
+	SetterList     []*Setter
+	MethodList     []*Method
+	CodeImportList []string
+	TestImportList []string
 }
 
 type Struct struct {
@@ -42,19 +44,24 @@ type Struct struct {
 	GotName      string
 	FieldList    []*Field
 	Code         string
+	ImportList   []string
 }
 
 type Constructor struct {
-	Name     string
-	Code     string
-	CodeTest string
+	Name           string
+	Code           string
+	CodeTest       string
+	CodeImportList []string
+	TestImportList []string
 }
 
 type Setter struct {
-	Name     string
-	Field    *Field
-	Code     string
-	CodeTest string
+	Name           string
+	Field          *Field
+	Code           string
+	CodeTest       string
+	CodeImportList []string
+	TestImportList []string
 }
 
 type Method struct {
@@ -65,15 +72,19 @@ type Method struct {
 	ResultNameTypeList []string
 	Code               string
 	CodeTest           string
+	CodeImportList     []string
+	TestImportList     []string
 }
 
 type Field struct {
-	Name         string
-	WantName     string
-	GotName      string
-	Type         string
-	NameType     string
-	ExampleValue string
+	Name           string
+	WantName       string
+	GotName        string
+	Type           string
+	NameType       string
+	ExampleValue   string
+	CodeImportList []string
+	TestImportList []string
 }
 
 func CreateMockPackage(interfacePackage *GoCodePackage) (mockPackage *GoCodePackage) {
@@ -96,6 +107,10 @@ func CreateMockPackage(interfacePackage *GoCodePackage) (mockPackage *GoCodePack
 func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName string) (mockFile *GoCodeFile, mockTestFile *GoCodeFile) {
 	var mockCode string
 	var mockTestCode string
+	var mockFileImportList []string
+	var mockTestFileImportList []string
+	mockFileImportList = append(mockFileImportList, interfaceFile.ImportList...)
+	mockTestFileImportList = append(mockTestFileImportList, interfaceFile.ImportList...)
 
 	for _, iFace := range interfaceFile.InterfaceList {
 		mock := CreateMockFromInterface(iFace, mockPackageName)
@@ -113,6 +128,9 @@ func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName
 			mockCode += method.Code
 			mockTestCode += method.CodeTest
 		}
+
+		mockFileImportList = append(mockFileImportList, mock.CodeImportList...)         // TODO: add unique
+		mockTestFileImportList = append(mockTestFileImportList, mock.TestImportList...) // TODO: add unique
 	}
 
 	if len(mockCode) == 0 {
@@ -123,7 +141,7 @@ func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName
 
 	mockFile = &GoCodeFile{
 		Name:       interfaceFile.Name,
-		ImportList: interfaceFile.ImportList,
+		ImportList: mockFileImportList,
 	}
 
 	mockFile.Code = mockPackageCode
@@ -135,7 +153,7 @@ func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName
 	}
 
 	mockTestFileName := createTestFilePath(mockFile.Name)
-	mockTestFileImports := interfaceFile.ImportList // TODO: replace with deep copy
+	mockTestFileImports := mockTestFileImportList // TODO: replace with deep copy
 	mockTestFileImports = append(mockTestFileImports, "reflect", "testing")
 
 	mockTestFile = &GoCodeFile{
@@ -196,53 +214,27 @@ func CreateMockFromInterface(iFace *Interface, mockPackageName string) (mock *Mo
 			arg.WantName = "want" + toPublic(arg.Name)
 			arg.GotName = "got" + toPublic(arg.Name)
 			arg.NameType = arg.Name + " " + arg.Type
-
-			switch {
-			case arg.Type == "string":
-				arg.ExampleValue = `"my` + toPublic(arg.Name) + `"`
-			case arg.Type == "bool":
-				arg.ExampleValue = "true"
-			case arg.Type == "rune":
-				arg.ExampleValue = `"X"`
-			case arg.Type == "byte":
-				arg.ExampleValue = `50`
-			case len(arg.Type) >= 3 && arg.Type[0:3] == "int":
-				arg.ExampleValue = "100"
-			case len(arg.Type) >= 4 && arg.Type[0:4] == "uint":
-				arg.ExampleValue = "200"
-			case len(arg.Type) >= 5 && arg.Type[0:5] == "float":
-				arg.ExampleValue = "3.14"
-			}
+			createExampleValue(arg)
 
 			method.ArgNameTypeList = append(method.ArgNameTypeList, arg.NameType)
+			method.CodeImportList = append(method.CodeImportList, arg.CodeImportList...) // TODO: add unique
+			method.TestImportList = append(method.TestImportList, arg.TestImportList...) // TODO: add unique
 		}
 		for _, result := range method.ResultList {
 			result.WantName = "want" + toPublic(result.Name)
 			result.GotName = "got" + toPublic(result.Name)
 			result.NameType = result.Name + " " + result.Type
+			createExampleValue(result)
 
-			switch {
-			case result.Type == "string":
-				result.ExampleValue = `"my` + toPublic(result.Name) + `"`
-			case result.Type == "bool":
-				result.ExampleValue = "true"
-			case result.Type == "rune":
-				result.ExampleValue = `"X"`
-			case result.Type == "byte":
-				result.ExampleValue = `50`
-			case len(result.Type) >= 3 && result.Type[0:3] == "int":
-				result.ExampleValue = "100"
-			case len(result.Type) >= 4 && result.Type[0:4] == "uint":
-				result.ExampleValue = "200"
-			case len(result.Type) >= 5 && result.Type[0:5] == "float":
-				result.ExampleValue = "3.14"
-			}
 			method.ResultNameTypeList = append(method.ResultNameTypeList, result.NameType)
+			method.CodeImportList = append(method.CodeImportList, result.CodeImportList...) // TODO: add unique
+			method.TestImportList = append(method.TestImportList, result.TestImportList...) // TODO: add unique
 		}
 
 		argList = append(argList, method.ArgList...)
 		resultList = append(resultList, method.ResultList...)
-
+		mock.CodeImportList = append(mock.CodeImportList, method.CodeImportList...) // TODO: add unique
+		mock.TestImportList = append(mock.TestImportList, method.TestImportList...) // TODO: add unique
 	}
 
 ArgLoop:
@@ -270,6 +262,40 @@ ResultLoop:
 			Name:  "Set" + toPublic(field.Name),
 			Field: field,
 		})
+	}
+	return
+}
+
+func createExampleValue(field *Field) {
+	switch {
+	case field.Type == "string":
+		field.ExampleValue = `"my` + toPublic(field.Name) + `"`
+	case field.Type == "interface{}":
+		field.ExampleValue = `"my` + toPublic(field.Name) + `"`
+	case len(field.Type) >= 3 && field.Type[0:3] == "int": // int must be after interface !
+		field.ExampleValue = "100"
+	case len(field.Type) >= 4 && field.Type[0:4] == "uint":
+		field.ExampleValue = "200"
+	case len(field.Type) >= 5 && field.Type[0:5] == "float":
+		field.ExampleValue = "3.14"
+	case field.Type == "bool":
+		field.ExampleValue = "true"
+	case field.Type == "rune":
+		field.ExampleValue = "'X'"
+	case field.Type == "byte":
+		field.ExampleValue = "50"
+	case field.Type == "error":
+		field.ExampleValue = `fmt.Errorf("simulated error")`
+		field.TestImportList = append(field.CodeImportList, "fmt")
+
+		// TODO: interface
+		// TODO: array
+		// TODO: map
+		// TODO: struct
+
+		// TODO: custom type
+		// TODO: custom struct
+
 	}
 	return
 }
@@ -520,30 +546,26 @@ func SaveGoPackage(Package *GoCodePackage) (err error) {
 	for _, file := range Package.FileList {
 		filePath := filepath.Join(Package.Path, file.Name)
 
-		var formattedCode []byte
-		formattedCode, err = imports.Process("", []byte(file.Code), &imports.Options{
-			Fragment:   false,
-			AllErrors:  true,
-			Comments:   true,
-			TabIndent:  true,
-			TabWidth:   8,
-			FormatOnly: false,
-		})
-		if err != nil {
-			err = fmt.Errorf("format file %s code failed: %s", file.Name, err)
-			return
-		}
+		//var formattedCode []byte
+		//formattedCode, err = imports.Process("", []byte(file.Code), &imports.Options{
+		//	Fragment:   false,
+		//	AllErrors:  true,
+		//	Comments:   true,
+		//	TabIndent:  true,
+		//	TabWidth:   8,
+		//	FormatOnly: false,
+		//})
+		//if err != nil {
+		//	err = fmt.Errorf("format file %s code failed: %s", file.Name, err)
+		//	return
+		//}
 
-		err = ioutil.WriteFile(filePath, formattedCode, 0644)
+		//err = ioutil.WriteFile(filePath, formattedCode, 0644)
+		err = ioutil.WriteFile(filePath, []byte(file.Code), 0644)
 		if err != nil {
 			err = fmt.Errorf("write file %s failed: %w", file.Name, err)
 			return
 		}
 	}
-	return
-}
-
-func createMockPackagePath(interfacePackagePath string) (mockFilePath string) {
-
 	return
 }

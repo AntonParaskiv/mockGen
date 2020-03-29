@@ -9,10 +9,13 @@ import (
 func main() {
 	interfacePackagePath := "examples/ManagerInterface"
 
-	// TODO: Parse Imports
-	interfacePackage := CreateInterfacePackage(interfacePackagePath)
+	interfacePackage, err := CreateInterfacePackage(interfacePackagePath)
+	if err != nil {
+		panic(err)
+	}
+
 	mockPackage := CreateMockPackage(interfacePackage)
-	err := SaveGoPackage(mockPackage)
+	err = SaveGoPackage(mockPackage)
 	if err != nil {
 		panic(err)
 	}
@@ -20,7 +23,7 @@ func main() {
 	return
 }
 
-func CreateInterfacePackage(packagePath string) (interfacePackage *GoCodePackage) {
+func CreateInterfacePackage(packagePath string) (interfacePackage *GoCodePackage, err error) {
 	astPackage, err := getAstPackage(packagePath)
 	if err != nil {
 		err = fmt.Errorf("get ast package failed: %w", err)
@@ -42,8 +45,8 @@ func CreateInterfacePackage(packagePath string) (interfacePackage *GoCodePackage
 		}
 
 		interfaceFile := &GoCodeFile{
-			Name:       filepath.Base(fullFileName), // TODO: check
-			ImportList: nil,                         // TODO: fill
+			Name:       filepath.Base(fullFileName),
+			ImportList: nil, // TODO: fill
 		}
 
 		astInterfaceSpecs := getInterfaces(astFile)
@@ -89,28 +92,48 @@ func CreateInterfaceFromAstInterfaceSpec(astInterfaceSpec *ast.TypeSpec) (iFace 
 			case *ast.FuncType:
 				for _, astArg := range astFuncType.Params.List {
 					argName := getNodeName(astArg)
-					astIdent, ok := astArg.Type.(*ast.Ident)
-					if !ok {
-						err = fmt.Errorf("ast type of %s is not ast ident", argName)
-					}
 
 					arg := &Field{
 						Name: argName,
-						Type: astIdent.Name,
 					}
+
+					switch astIdent := astArg.Type.(type) {
+					case *ast.Ident:
+						arg.Type = astIdent.Name
+					case *ast.InterfaceType:
+						if len(astIdent.Methods.List) > 0 {
+							err = fmt.Errorf("unsupport type interface{} %s with methods ", argName)
+							return
+						}
+						arg.Type = "interface{}"
+					default:
+						err = fmt.Errorf("unsupport type of %s", argName)
+						return
+					}
+
 					method.ArgList = append(method.ArgList, arg)
 				}
 				for _, astResult := range astFuncType.Results.List {
 					resultName := getNodeName(astResult)
-					astIdent, ok := astResult.Type.(*ast.Ident)
-					if !ok {
-						err = fmt.Errorf("ast type of %s is not ast ident", resultName)
-					}
 
 					result := &Field{
-						Name: getNodeName(astResult),
-						Type: astIdent.Name,
+						Name: resultName,
 					}
+
+					switch astIdent := astResult.Type.(type) {
+					case *ast.Ident:
+						result.Type = astIdent.Name
+					case *ast.InterfaceType:
+						if len(astIdent.Methods.List) > 0 {
+							err = fmt.Errorf("unsupport type interface{} %s with methods ", resultName)
+							return
+						}
+						result.Type = "interface{}"
+					default:
+						err = fmt.Errorf("unsupport type of %s", resultName)
+						return
+					}
+
 					method.ResultList = append(method.ResultList, result)
 				}
 			}
