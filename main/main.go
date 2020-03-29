@@ -91,49 +91,21 @@ func CreateInterfaceFromAstInterfaceSpec(astInterfaceSpec *ast.TypeSpec) (iFace 
 			switch astFuncType := astMethod.Type.(type) {
 			case *ast.FuncType:
 				for _, astArg := range astFuncType.Params.List {
-					argName := getNodeName(astArg)
-
-					arg := &Field{
-						Name: argName,
-					}
-
-					switch astIdent := astArg.Type.(type) {
-					case *ast.Ident:
-						arg.Type = astIdent.Name
-					case *ast.InterfaceType:
-						if len(astIdent.Methods.List) > 0 {
-							err = fmt.Errorf("unsupport type interface{} %s with methods ", argName)
-							return
-						}
-						arg.Type = "interface{}"
-					default:
-						err = fmt.Errorf("unsupport type of %s", argName)
+					var arg *Field
+					arg, err = createFieldFromAstField(astArg)
+					if err != nil {
+						err = fmt.Errorf("create field from ast field failed: %w", err)
 						return
 					}
-
 					method.ArgList = append(method.ArgList, arg)
 				}
 				for _, astResult := range astFuncType.Results.List {
-					resultName := getNodeName(astResult)
-
-					result := &Field{
-						Name: resultName,
-					}
-
-					switch astIdent := astResult.Type.(type) {
-					case *ast.Ident:
-						result.Type = astIdent.Name
-					case *ast.InterfaceType:
-						if len(astIdent.Methods.List) > 0 {
-							err = fmt.Errorf("unsupport type interface{} %s with methods ", resultName)
-							return
-						}
-						result.Type = "interface{}"
-					default:
-						err = fmt.Errorf("unsupport type of %s", resultName)
+					var result *Field
+					result, err = createFieldFromAstField(astResult)
+					if err != nil {
+						err = fmt.Errorf("create field from ast field failed: %w", err)
 						return
 					}
-
 					method.ResultList = append(method.ResultList, result)
 				}
 			}
@@ -144,5 +116,61 @@ func CreateInterfaceFromAstInterfaceSpec(astInterfaceSpec *ast.TypeSpec) (iFace 
 		return
 	}
 
+	return
+}
+
+func createFieldFromAstField(astField *ast.Field) (field *Field, err error) {
+	field = &Field{
+		Name: getNodeName(astField),
+	}
+	fieldType, err := getFieldTypeFromAstFieldType(astField.Type)
+	if err != nil {
+		err = fmt.Errorf("get field %s type from ast field type failed: %w", field.Name, err)
+		return
+	}
+	field.Type = fieldType
+
+	//switch astType := astField.Type.(type) {
+	//case *ast.Ident:
+	//	field.Type = astType.Name
+	//case *ast.InterfaceType:
+	//	if len(astType.Methods.List) > 0 {
+	//		err = fmt.Errorf("unsupported type interface{} %s with methods", field.Name)
+	//		return
+	//	}
+	//	field.Type = "interface{}"
+	//case *ast.ArrayType:
+	//	fmt.Println(astType.Elt)
+	//
+	//default:
+	//	err = fmt.Errorf("unsupported type of %s", field.Name)
+	//	return
+	//}
+
+	return
+}
+
+func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err error) {
+	switch astType := astFieldType.(type) {
+	case *ast.Ident:
+		fieldType = astType.Name
+	case *ast.InterfaceType:
+		if len(astType.Methods.List) > 0 {
+			err = fmt.Errorf("unsupported type interface{} with methods")
+			return
+		}
+		fieldType = "interface{}"
+	case *ast.ArrayType:
+		var itemType string
+		itemType, err = getFieldTypeFromAstFieldType(astType.Elt)
+		if err != nil {
+			err = fmt.Errorf("get array item type failed: %w", err)
+			return
+		}
+		fieldType = fmt.Sprintf("[]%s", itemType)
+	default:
+		err = fmt.Errorf("unsupported type")
+		return
+	}
 	return
 }

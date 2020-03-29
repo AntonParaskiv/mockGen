@@ -214,7 +214,7 @@ func CreateMockFromInterface(iFace *Interface, mockPackageName string) (mock *Mo
 			arg.WantName = "want" + toPublic(arg.Name)
 			arg.GotName = "got" + toPublic(arg.Name)
 			arg.NameType = arg.Name + " " + arg.Type
-			createExampleValue(arg)
+			arg.ExampleValue, arg.TestImportList = createExampleValue(arg.Type, arg.Name)
 
 			method.ArgNameTypeList = append(method.ArgNameTypeList, arg.NameType)
 			method.CodeImportList = append(method.CodeImportList, arg.CodeImportList...) // TODO: add unique
@@ -224,7 +224,7 @@ func CreateMockFromInterface(iFace *Interface, mockPackageName string) (mock *Mo
 			result.WantName = "want" + toPublic(result.Name)
 			result.GotName = "got" + toPublic(result.Name)
 			result.NameType = result.Name + " " + result.Type
-			createExampleValue(result)
+			result.ExampleValue, result.TestImportList = createExampleValue(result.Type, result.Name)
 
 			method.ResultNameTypeList = append(method.ResultNameTypeList, result.NameType)
 			method.CodeImportList = append(method.CodeImportList, result.CodeImportList...) // TODO: add unique
@@ -262,40 +262,6 @@ ResultLoop:
 			Name:  "Set" + toPublic(field.Name),
 			Field: field,
 		})
-	}
-	return
-}
-
-func createExampleValue(field *Field) {
-	switch {
-	case field.Type == "string":
-		field.ExampleValue = `"my` + toPublic(field.Name) + `"`
-	case field.Type == "interface{}":
-		field.ExampleValue = `"my` + toPublic(field.Name) + `"`
-	case len(field.Type) >= 3 && field.Type[0:3] == "int": // int must be after interface !
-		field.ExampleValue = "100"
-	case len(field.Type) >= 4 && field.Type[0:4] == "uint":
-		field.ExampleValue = "200"
-	case len(field.Type) >= 5 && field.Type[0:5] == "float":
-		field.ExampleValue = "3.14"
-	case field.Type == "bool":
-		field.ExampleValue = "true"
-	case field.Type == "rune":
-		field.ExampleValue = "'X'"
-	case field.Type == "byte":
-		field.ExampleValue = "50"
-	case field.Type == "error":
-		field.ExampleValue = `fmt.Errorf("simulated error")`
-		field.TestImportList = append(field.CodeImportList, "fmt")
-
-		// TODO: interface
-		// TODO: array
-		// TODO: map
-		// TODO: struct
-
-		// TODO: custom type
-		// TODO: custom struct
-
 	}
 	return
 }
@@ -566,6 +532,45 @@ func SaveGoPackage(Package *GoCodePackage) (err error) {
 			err = fmt.Errorf("write file %s failed: %w", file.Name, err)
 			return
 		}
+	}
+	return
+}
+
+func createExampleValue(fieldType string, fieldName string) (exampleValue string, importList []string) {
+	switch {
+	case fieldType == "string":
+		exampleValue = `"my` + toPublic(fieldName) + `"`
+	case fieldType == "interface{}":
+		exampleValue = `"my` + toPublic(fieldName) + `"`
+	case len(fieldType) >= 3 && fieldType[0:3] == "int": // int must be after interface !
+		exampleValue = "100"
+	case len(fieldType) >= 4 && fieldType[0:4] == "uint":
+		exampleValue = "200"
+	case len(fieldType) >= 5 && fieldType[0:5] == "float":
+		exampleValue = "3.14"
+	case fieldType == "bool":
+		exampleValue = "true"
+	case fieldType == "rune":
+		exampleValue = "'X'"
+	case fieldType == "byte":
+		exampleValue = "50"
+	case fieldType == "error":
+		exampleValue = `fmt.Errorf("simulated error")`
+		importList = append(importList, "fmt")
+	case len(fieldType) >= 2 && fieldType[0:2] == "[]":
+		itemType := fieldType[2:]
+		itemExampleValue, itemImportList := createExampleValue(itemType, itemType+"Example")
+		exampleValue = fmt.Sprintf("%s{\n", fieldType)
+		exampleValue += fmt.Sprintf("	%s,\n", itemExampleValue)
+		exampleValue += fmt.Sprintf("}")
+		importList = append(importList, itemImportList...)
+
+		// TODO: map
+		// TODO: struct
+
+		// TODO: custom type
+		// TODO: custom struct
+
 	}
 	return
 }
