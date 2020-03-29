@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"golang.org/x/tools/imports"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -518,7 +519,22 @@ func SaveGoPackage(Package *GoCodePackage) (err error) {
 
 	for _, file := range Package.FileList {
 		filePath := filepath.Join(Package.Path, file.Name)
-		err = ioutil.WriteFile(filePath, []byte(file.Code), 0644)
+
+		var formattedCode []byte
+		formattedCode, err = imports.Process("", []byte(file.Code), &imports.Options{
+			Fragment:   false,
+			AllErrors:  true,
+			Comments:   true,
+			TabIndent:  true,
+			TabWidth:   8,
+			FormatOnly: false,
+		})
+		if err != nil {
+			err = fmt.Errorf("format file %s code failed: %s", file.Name, err)
+			return
+		}
+
+		err = ioutil.WriteFile(filePath, formattedCode, 0644)
 		if err != nil {
 			err = fmt.Errorf("write file %s failed: %w", file.Name, err)
 			return

@@ -20,13 +20,19 @@ func newPackage() (pkg *ast.Package, err error) {
 	return
 }
 
-func getRPackages(packagePath string) (rPkgs map[string]*ast.Package, err error) {
+func getAstPackage(packagePath string) (astPackage *ast.Package, err error) {
 	fSet := token.NewFileSet()
-	rPkgs, err = parser.ParseDir(fSet, packagePath, nil, 0)
+	astPackageList, err := parser.ParseDir(fSet, packagePath, nil, 0)
 	if err != nil {
 		err = fmt.Errorf("parse ast dir failed: %w", err)
 		return
 	}
+
+	for _, astPackageItem := range astPackageList {
+		astPackage = astPackageItem
+		return
+	}
+
 	return
 }
 
