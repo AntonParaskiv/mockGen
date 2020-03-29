@@ -5,15 +5,64 @@ import (
 	"strings"
 )
 
+type GoCodePackage struct {
+	FolderName    string
+	PackageName   string
+	InterfaceList []*Interface
+	MockList      []*Mock
+	Code          string
+}
+
+type GoCodeFile struct {
+	Name          string
+	ImportList    []string
+	InterfaceList []*Interface
+	MockList      []*Mock
+	Code          string
+}
+
+type Interface struct {
+	Name       string
+	MethodList []*Method
+}
+
 type Mock struct {
+	Struct      *Struct
+	Constructor *Constructor
+	SetterList  []*Setter
+	MethodList  []*Method
+}
+
+type Struct struct {
 	Name         string
 	ReceiverName string
 	WantName     string
 	GotName      string
 	FieldList    []*Field
-	Constructor  *Constructor
-	SetterList   []*Setter
-	MethodList   []*Method
+	Code         string
+}
+
+type Constructor struct {
+	Name     string
+	Code     string
+	CodeTest string
+}
+
+type Setter struct {
+	Name     string
+	Field    *Field
+	Code     string
+	CodeTest string
+}
+
+type Method struct {
+	Name               string
+	ArgList            []*Field
+	ResultList         []*Field
+	ArgNameTypeList    []string
+	ResultNameTypeList []string
+	Code               string
+	CodeTest           string
 }
 
 type Field struct {
@@ -25,150 +74,251 @@ type Field struct {
 	ExampleValue string
 }
 
-type Constructor struct {
-	Name string
+func CreateMock(iFace *Interface) (mock *Mock) {
+	// TODO: cut "Interface" and other trash
+	// TODO: compare structName with packageName
+	structName := iFace.Name
+	// TODO: compare constructorName with packageName
+	constructorName := "New"
+
+	mock = &Mock{
+		Struct: &Struct{
+			Name:         structName,
+			ReceiverName: getReceiverName(structName),
+			WantName:     "want" + toPublic(structName),
+			GotName:      "got" + toPublic(structName),
+		},
+		Constructor: &Constructor{
+			Name: constructorName,
+		},
+		MethodList: iFace.MethodList,
+	}
+
+	argList := []*Field{}
+	resultList := []*Field{}
+	for _, method := range mock.MethodList {
+		for _, arg := range method.ArgList {
+			arg.WantName = "want" + toPublic(arg.Name)
+			arg.GotName = "got" + toPublic(arg.Name)
+			arg.NameType = arg.Name + " " + arg.Type
+
+			switch {
+			case arg.Type == "string":
+				arg.ExampleValue = `"my` + toPublic(arg.Name) + `"`
+			case arg.Type == "bool":
+				arg.ExampleValue = "true"
+			case arg.Type == "rune":
+				arg.ExampleValue = `"X"`
+			case arg.Type == "byte":
+				arg.ExampleValue = `50`
+			case len(arg.Type) >= 3 && arg.Type[0:3] == "int":
+				arg.ExampleValue = "100"
+			case len(arg.Type) >= 4 && arg.Type[0:4] == "uint":
+				arg.ExampleValue = "200"
+			case len(arg.Type) >= 5 && arg.Type[0:5] == "float":
+				arg.ExampleValue = "3.14"
+			}
+
+			method.ArgNameTypeList = append(method.ArgNameTypeList, arg.NameType)
+		}
+		for _, result := range method.ResultList {
+			result.WantName = "want" + toPublic(result.Name)
+			result.GotName = "got" + toPublic(result.Name)
+			result.NameType = result.Name + " " + result.Type
+
+			switch {
+			case result.Type == "string":
+				result.ExampleValue = `"my` + toPublic(result.Name) + `"`
+			case result.Type == "bool":
+				result.ExampleValue = "true"
+			case result.Type == "rune":
+				result.ExampleValue = `"X"`
+			case result.Type == "byte":
+				result.ExampleValue = `50`
+			case len(result.Type) >= 3 && result.Type[0:3] == "int":
+				result.ExampleValue = "100"
+			case len(result.Type) >= 4 && result.Type[0:4] == "uint":
+				result.ExampleValue = "200"
+			case len(result.Type) >= 5 && result.Type[0:5] == "float":
+				result.ExampleValue = "3.14"
+			}
+			method.ResultNameTypeList = append(method.ResultNameTypeList, result.NameType)
+		}
+
+		argList = append(argList, method.ArgList...)
+		resultList = append(resultList, method.ResultList...)
+
+	}
+
+ArgLoop:
+	for _, arg := range argList {
+		for _, mockField := range mock.Struct.FieldList {
+			if mockField.Name == arg.Name {
+				continue ArgLoop
+			}
+		}
+		mock.Struct.FieldList = append(mock.Struct.FieldList, arg)
+	}
+
+ResultLoop:
+	for _, result := range resultList {
+		for _, mockField := range mock.Struct.FieldList {
+			if mockField.Name == result.Name {
+				continue ResultLoop
+			}
+		}
+		mock.Struct.FieldList = append(mock.Struct.FieldList, result)
+	}
+
+	for _, field := range mock.Struct.FieldList {
+		mock.SetterList = append(mock.SetterList, &Setter{
+			Name:  "Set" + toPublic(field.Name),
+			Field: field,
+		})
+	}
+	return
 }
 
-type Setter struct {
-	Name  string
-	Field *Field
-}
+func GenCodeMock(mock *Mock) {
 
-type Method struct {
-	Name               string
-	ArgList            []*Field
-	ResultList         []*Field
-	ArgNameTypeList    []string
-	ResultNameTypeList []string
-}
-
-func PrintMock(mock *Mock) (result string) {
-	result += PrintStruct(mock)
-	result += PrintConstructor(mock)
-	resultTest := PrintConstructorTest(mock)
+	GenCodeStruct(mock)
+	GenCodeConstructor(mock)
+	GenCodeTestConstructor(mock)
 
 	for _, setter := range mock.SetterList {
-		result += PrintSetters(mock, setter)
-		resultTest += PrintSetterTest(mock, setter)
+		GenCodeSetter(mock, setter)
+		GenCodeTestSetter(mock, setter)
 	}
 
 	for _, method := range mock.MethodList {
-		result += PrintMethod(mock, method)
-		resultTest += PrintMethodTest(mock, method)
+		GenCodeMethod(mock, method)
+		GenCodeTestMethod(mock, method)
 	}
-
-	result += resultTest
 	return
 }
 
-func PrintStruct(mock *Mock) (result string) {
-	result += fmt.Sprintf("type %s struct {\n", mock.Name)
-	for _, field := range mock.FieldList {
-		result += fmt.Sprintf("	%s %s\n", field.Name, field.Type)
+func GenCodeStruct(mock *Mock) {
+	var code string
+	code += fmt.Sprintf("type %s struct {\n", mock.Struct.Name)
+	for _, field := range mock.Struct.FieldList {
+		code += fmt.Sprintf("	%s %s\n", field.Name, field.Type)
 	}
-	result += fmt.Sprintf("}\n\n")
+	code += fmt.Sprintf("}\n\n")
+	mock.Struct.Code = code
 	return
 }
 
-func PrintConstructor(mock *Mock) (result string) {
-	result += fmt.Sprintf("func %s() (%s *%s) {\n", mock.Constructor.Name, mock.ReceiverName, mock.Name)
-	result += fmt.Sprintf("	%s = new(%s)\n", mock.ReceiverName, mock.Name)
-	result += fmt.Sprintf("	return %s\n", mock.ReceiverName)
-	result += fmt.Sprintf("}\n\n")
+func GenCodeConstructor(mock *Mock) {
+	var code string
+	code += fmt.Sprintf("func %s() (%s *%s) {\n", mock.Constructor.Name, mock.Struct.ReceiverName, mock.Struct.Name)
+	code += fmt.Sprintf("	%s = new(%s)\n", mock.Struct.ReceiverName, mock.Struct.Name)
+	code += fmt.Sprintf("	return %s\n", mock.Struct.ReceiverName)
+	code += fmt.Sprintf("}\n\n")
+	mock.Constructor.Code = code
 	return
 }
 
-func PrintConstructorTest(mock *Mock) (result string) {
-	result += fmt.Sprintf("func Test%s(t *testing.T) {\n", mock.Constructor.Name)
+func GenCodeTestConstructor(mock *Mock) {
+	var code string
+	code += fmt.Sprintf("func Test%s(t *testing.T) {\n", mock.Constructor.Name)
 
-	result += fmt.Sprintf("	tests := []struct {\n")
-	result += fmt.Sprintf("		name string\n")
-	result += fmt.Sprintf("		%s *%s\n", mock.WantName, mock.Name)
-	result += fmt.Sprintf("	}{\n")
-	result += fmt.Sprintf("		{\n")
-	result += fmt.Sprintf("			name: \"Struct init\",\n")
-	result += fmt.Sprintf("			%s: &%s{},\n", mock.WantName, mock.Name)
-	result += fmt.Sprintf("		},\n")
-	result += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("	tests := []struct {\n")
+	code += fmt.Sprintf("		name string\n")
+	code += fmt.Sprintf("		%s *%s\n", mock.Struct.WantName, mock.Struct.Name)
+	code += fmt.Sprintf("	}{\n")
+	code += fmt.Sprintf("		{\n")
+	code += fmt.Sprintf("			name: \"Struct init\",\n")
+	code += fmt.Sprintf("			%s: &%s{},\n", mock.Struct.WantName, mock.Struct.Name)
+	code += fmt.Sprintf("		},\n")
+	code += fmt.Sprintf("	}\n")
 
-	result += fmt.Sprintf("	for _, tt := range tests {\n")
-	result += fmt.Sprintf("		t.Run(tt.name, func(t *testing.T) {\n")
-	result += fmt.Sprintf("			%s := %s()\n", mock.GotName, mock.Constructor.Name)
-	result += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", mock.GotName, mock.WantName)
-	result += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", mock.Constructor.Name, mock.GotName, mock.WantName)
-	result += fmt.Sprintf("			}\n")
-	result += fmt.Sprintf("		})\n")
-	result += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("	for _, tt := range tests {\n")
+	code += fmt.Sprintf("		t.Run(tt.name, func(t *testing.T) {\n")
+	code += fmt.Sprintf("			%s := %s()\n", mock.Struct.GotName, mock.Constructor.Name)
+	code += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", mock.Struct.GotName, mock.Struct.WantName)
+	code += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", mock.Constructor.Name, mock.Struct.GotName, mock.Struct.WantName)
+	code += fmt.Sprintf("			}\n")
+	code += fmt.Sprintf("		})\n")
+	code += fmt.Sprintf("	}\n")
 
-	result += fmt.Sprintf("}\n\n")
-
+	code += fmt.Sprintf("}\n\n")
+	mock.Constructor.CodeTest = code
 	return
 }
 
-func PrintSetters(mock *Mock, setter *Setter) (result string) {
-	result += fmt.Sprintf("func (%s *%s) %s(%s %s) *%s{\n", mock.ReceiverName, mock.Name, setter.Name, setter.Field.Name, setter.Field.Type, mock.Name)
-	result += fmt.Sprintf("	%s.%s = %s\n", mock.ReceiverName, setter.Field.Name, setter.Field.Name)
-	result += fmt.Sprintf("	return %s\n", mock.ReceiverName)
-	result += fmt.Sprintf("}\n\n")
+func GenCodeSetter(mock *Mock, setter *Setter) {
+	var code string
+	code += fmt.Sprintf("func (%s *%s) %s(%s %s) *%s{\n", mock.Struct.ReceiverName, mock.Struct.Name, setter.Name, setter.Field.Name, setter.Field.Type, mock.Struct.Name)
+	code += fmt.Sprintf("	%s.%s = %s\n", mock.Struct.ReceiverName, setter.Field.Name, setter.Field.Name)
+	code += fmt.Sprintf("	return %s\n", mock.Struct.ReceiverName)
+	code += fmt.Sprintf("}\n\n")
+	setter.Code = code
 	return
 }
 
-func PrintSetterTest(mock *Mock, setter *Setter) (result string) {
-	result += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Name, setter.Name)
+func GenCodeTestSetter(mock *Mock, setter *Setter) {
+	var code string
+	code += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Struct.Name, setter.Name)
 
-	result += fmt.Sprintf("	type args struct {\n")
-	result += fmt.Sprintf("		%s %s\n", setter.Field.Name, setter.Field.Type)
-	result += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("	type args struct {\n")
+	code += fmt.Sprintf("		%s %s\n", setter.Field.Name, setter.Field.Type)
+	code += fmt.Sprintf("	}\n")
 
-	result += fmt.Sprintf("	tests := []struct {\n")
-	result += fmt.Sprintf("		name string\n")
-	result += fmt.Sprintf("		args args\n")
-	result += fmt.Sprintf("		%s	*%s\n", mock.WantName, mock.Name)
-	result += fmt.Sprintf("	}{\n")
-	result += fmt.Sprintf("		{\n")
-	result += fmt.Sprintf("			name: \"Setting\",\n")
-	result += fmt.Sprintf("			args: args{\n")
-	result += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
-	result += fmt.Sprintf("			},\n")
-	result += fmt.Sprintf("			%s: &%s{\n", mock.WantName, mock.Name)
-	result += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
-	result += fmt.Sprintf("			},\n")
-	result += fmt.Sprintf("		},\n")
-	result += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("	tests := []struct {\n")
+	code += fmt.Sprintf("		name string\n")
+	code += fmt.Sprintf("		args args\n")
+	code += fmt.Sprintf("		%s	*%s\n", mock.Struct.WantName, mock.Struct.Name)
+	code += fmt.Sprintf("	}{\n")
+	code += fmt.Sprintf("		{\n")
+	code += fmt.Sprintf("			name: \"Setting\",\n")
+	code += fmt.Sprintf("			args: args{\n")
+	code += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
+	code += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("			%s: &%s{\n", mock.Struct.WantName, mock.Struct.Name)
+	code += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
+	code += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("		},\n")
+	code += fmt.Sprintf("	}\n")
 
-	result += fmt.Sprintf("	for _, tt := range tests {\n")
-	result += fmt.Sprintf("		t.Run(tt.name, func(t *testing.T) {\n")
-	result += fmt.Sprintf("			%s := &%s{}\n", mock.ReceiverName, mock.Name)
-	result += fmt.Sprintf("			%s := %s.%s(tt.args.%s)\n", mock.GotName, mock.ReceiverName, setter.Name, setter.Field.Name)
-	result += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", mock.GotName, mock.WantName)
-	result += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", setter.Name, mock.GotName, mock.WantName)
-	result += fmt.Sprintf("			}\n")
-	result += fmt.Sprintf("		})\n")
-	result += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("	for _, tt := range tests {\n")
+	code += fmt.Sprintf("		t.Run(tt.name, func(t *testing.T) {\n")
+	code += fmt.Sprintf("			%s := &%s{}\n", mock.Struct.ReceiverName, mock.Struct.Name)
+	code += fmt.Sprintf("			%s := %s.%s(tt.args.%s)\n", mock.Struct.GotName, mock.Struct.ReceiverName, setter.Name, setter.Field.Name)
+	code += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", mock.Struct.GotName, mock.Struct.WantName)
+	code += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", setter.Name, mock.Struct.GotName, mock.Struct.WantName)
+	code += fmt.Sprintf("			}\n")
+	code += fmt.Sprintf("		})\n")
+	code += fmt.Sprintf("	}\n")
 
-	result += fmt.Sprintf("}\n\n")
-
+	code += fmt.Sprintf("}\n\n")
+	setter.CodeTest = code
 	return
 }
 
-func PrintMethod(mock *Mock, method *Method) (output string) {
+func GenCodeMethod(mock *Mock, method *Method) {
+	var code string
+
 	argLine := strings.Join(method.ArgNameTypeList, ", ")
 	resultLine := strings.Join(method.ResultNameTypeList, ", ")
 
-	output += fmt.Sprintf("func (%s *%s) %s(%s) (%s) {\n", mock.ReceiverName, mock.Name, method.Name, argLine, resultLine)
+	code += fmt.Sprintf("func (%s *%s) %s(%s) (%s) {\n", mock.Struct.ReceiverName, mock.Struct.Name, method.Name, argLine, resultLine)
 	for _, arg := range method.ArgList {
-		output += fmt.Sprintf("	%s.%s = %s\n", mock.ReceiverName, arg.Name, arg.Name)
+		code += fmt.Sprintf("	%s.%s = %s\n", mock.Struct.ReceiverName, arg.Name, arg.Name)
 	}
 
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("	%s = %s.%s\n", result.Name, mock.ReceiverName, result.Name)
+		code += fmt.Sprintf("	%s = %s.%s\n", result.Name, mock.Struct.ReceiverName, result.Name)
 	}
-	output += fmt.Sprintf("	return\n")
-	output += fmt.Sprintf("}\n\n")
+	code += fmt.Sprintf("	return\n")
+	code += fmt.Sprintf("}\n\n")
+
+	method.Code = code
 	return
 }
 
-func PrintMethodTest(mock *Mock, method *Method) (output string) {
+func GenCodeTestMethod(mock *Mock, method *Method) {
+	var code string
+
 	//tt.args.nickName, tt.args.password
 	ttArgList := []string{}
 	for _, arg := range method.ArgList {
@@ -183,83 +333,84 @@ func PrintMethodTest(mock *Mock, method *Method) (output string) {
 	}
 	gotResultsLine := strings.Join(gotResultList, ",")
 
-	output += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Name, method.Name)
+	code += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Struct.Name, method.Name)
 
-	output += fmt.Sprintf("	type fields struct {\n")
+	code += fmt.Sprintf("	type fields struct {\n")
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("		%s %s\n", result.Name, result.Type)
+		code += fmt.Sprintf("		%s %s\n", result.Name, result.Type)
 	}
-	output += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("	}\n")
 
-	output += fmt.Sprintf("	type args struct {\n")
+	code += fmt.Sprintf("	type args struct {\n")
 	for _, arg := range method.ArgList {
-		output += fmt.Sprintf("		%s %s\n", arg.Name, arg.Type)
+		code += fmt.Sprintf("		%s %s\n", arg.Name, arg.Type)
 	}
-	output += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("	}\n")
 
-	output += fmt.Sprintf("	tests := []struct {\n")
-	output += fmt.Sprintf("		name string\n")
-	output += fmt.Sprintf("		fields fields\n")
-	output += fmt.Sprintf("		args args\n")
+	code += fmt.Sprintf("	tests := []struct {\n")
+	code += fmt.Sprintf("		name string\n")
+	code += fmt.Sprintf("		fields fields\n")
+	code += fmt.Sprintf("		args args\n")
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("		%s %s\n", result.WantName, result.Type)
+		code += fmt.Sprintf("		%s %s\n", result.WantName, result.Type)
 	}
-	output += fmt.Sprintf("		%s	*%s\n", mock.WantName, mock.Name)
-	output += fmt.Sprintf("	}{\n")
-	output += fmt.Sprintf("		{\n")
-	output += fmt.Sprintf("			name: \"Success\",\n")
+	code += fmt.Sprintf("		%s	*%s\n", mock.Struct.WantName, mock.Struct.Name)
+	code += fmt.Sprintf("	}{\n")
+	code += fmt.Sprintf("		{\n")
+	code += fmt.Sprintf("			name: \"Success\",\n")
 
-	output += fmt.Sprintf("			fields: fields{\n")
+	code += fmt.Sprintf("			fields: fields{\n")
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
+		code += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
 	}
-	output += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("			},\n")
 
-	output += fmt.Sprintf("			args: args{\n")
+	code += fmt.Sprintf("			args: args{\n")
 	for _, arg := range method.ArgList {
-		output += fmt.Sprintf("		%s: %s,\n", arg.Name, arg.ExampleValue)
+		code += fmt.Sprintf("		%s: %s,\n", arg.Name, arg.ExampleValue)
 	}
-	output += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("			},\n")
 
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("		%s: %s,\n", result.WantName, result.ExampleValue)
+		code += fmt.Sprintf("		%s: %s,\n", result.WantName, result.ExampleValue)
 	}
 
-	output += fmt.Sprintf("			%s: &%s{\n", mock.WantName, mock.Name)
+	code += fmt.Sprintf("			%s: &%s{\n", mock.Struct.WantName, mock.Struct.Name)
 	for _, arg := range method.ArgList {
-		output += fmt.Sprintf("			%s: %s,\n", arg.Name, arg.ExampleValue)
+		code += fmt.Sprintf("			%s: %s,\n", arg.Name, arg.ExampleValue)
 	}
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
+		code += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
 	}
-	output += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("			},\n")
 
-	output += fmt.Sprintf("		},\n")
-	output += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("		},\n")
+	code += fmt.Sprintf("	}\n")
 
-	output += fmt.Sprintf("	for _, tt := range tests {\n")
-	output += fmt.Sprintf("		t.Run(tt.name, func(t *testing.T) {\n")
-	output += fmt.Sprintf("			%s := &%s{\n", mock.ReceiverName, mock.Name)
+	code += fmt.Sprintf("	for _, tt := range tests {\n")
+	code += fmt.Sprintf("		t.Run(tt.name, func(t *testing.T) {\n")
+	code += fmt.Sprintf("			%s := &%s{\n", mock.Struct.ReceiverName, mock.Struct.Name)
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("		%s: tt.fields.%s,\n", result.Name, result.Name)
+		code += fmt.Sprintf("		%s: tt.fields.%s,\n", result.Name, result.Name)
 	}
-	output += fmt.Sprintf("			}\n")
-	output += fmt.Sprintf("			%s := %s.%s(%s)\n", gotResultsLine, mock.ReceiverName, method.Name, ttArgsLine)
+	code += fmt.Sprintf("			}\n")
+	code += fmt.Sprintf("			%s := %s.%s(%s)\n", gotResultsLine, mock.Struct.ReceiverName, method.Name, ttArgsLine)
 
 	for _, result := range method.ResultList {
-		output += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", result.GotName, result.WantName)
-		output += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", result.GotName, result.GotName, result.WantName)
-		output += fmt.Sprintf("			}\n")
+		code += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", result.GotName, result.WantName)
+		code += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", result.GotName, result.GotName, result.WantName)
+		code += fmt.Sprintf("			}\n")
 	}
 
-	output += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", mock.ReceiverName, mock.WantName)
-	output += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", mock.Name, mock.ReceiverName, mock.WantName)
-	output += fmt.Sprintf("			}\n")
+	code += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", mock.Struct.ReceiverName, mock.Struct.WantName)
+	code += fmt.Sprintf("				t.Errorf(\"%s() = %%v, want %%v\", %s, tt.%s)\n", mock.Struct.Name, mock.Struct.ReceiverName, mock.Struct.WantName)
+	code += fmt.Sprintf("			}\n")
 
-	output += fmt.Sprintf("		})\n")
-	output += fmt.Sprintf("	}\n")
+	code += fmt.Sprintf("		})\n")
+	code += fmt.Sprintf("	}\n")
 
-	output += fmt.Sprintf("}\n\n")
+	code += fmt.Sprintf("}\n\n")
 
+	method.CodeTest = code
 	return
 }
