@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 )
 
 type GoCodePackage struct {
-	FolderName    string
-	PackageName   string
-	InterfaceList []*Interface
-	MockList      []*Mock
-	Code          string
+	Path        string
+	PackageName string
+	FileList    []*GoCodeFile
 }
 
 type GoCodeFile struct {
@@ -74,7 +74,99 @@ type Field struct {
 	ExampleValue string
 }
 
-func CreateMock(iFace *Interface) (mock *Mock) {
+func CreateMockPackage(interfacePackage *GoCodePackage) (mockPackage *GoCodePackage) {
+	// TODO: handle this
+	mockPackagePath := interfacePackage.Path + "/Mock"
+	// TODO: handle this
+	mockPackageName := interfacePackage.PackageName + "Mock"
+
+	mockPackage = &GoCodePackage{
+		Path:        mockPackagePath,
+		PackageName: mockPackageName,
+	}
+
+	// TODO: handle this
+	mockPackageCode := fmt.Sprintf("package %s\n\n", mockPackage.PackageName)
+
+	for _, interfaceFile := range interfacePackage.FileList {
+		mockFile, mockTestFile := CreateMockFilesFromInterfaceFile(interfaceFile, mockPackageCode)
+		mockPackage.FileList = append(mockPackage.FileList, mockFile, mockTestFile)
+	}
+
+	return
+}
+
+func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageCode string) (mockFile *GoCodeFile, mockTestFile *GoCodeFile) {
+	var mockCode string
+	var mockTestCode string
+
+	for _, iFace := range interfaceFile.InterfaceList {
+		mock := CreateMockFromInterface(iFace)
+		GenCodeMock(mock)
+		mockCode += mock.Struct.Code
+		mockCode += mock.Constructor.Code
+		mockTestCode += mock.Constructor.CodeTest
+
+		for _, setter := range mock.SetterList {
+			mockCode += setter.Code
+			mockTestCode += setter.CodeTest
+		}
+
+		for _, method := range mock.MethodList {
+			mockCode += method.Code
+			mockTestCode += method.CodeTest
+		}
+	}
+
+	if len(mockCode) > 0 {
+		// TODO: handle this
+		mockFileName := interfaceFile.Name
+
+		mockFile = &GoCodeFile{
+			Name:       mockFileName,
+			ImportList: interfaceFile.ImportList,
+		}
+
+		mockFile.Code = mockPackageCode
+		mockFile.Code += CreateImportList(mockFile.ImportList)
+		mockFile.Code += mockCode
+	}
+
+	if len(mockTestCode) > 0 {
+		// TODO: handle this
+		mockTestFileName := interfaceFile.Name + "_test"
+		mockTestFileImports := interfaceFile.ImportList // TODO: replace with deep copy
+		mockTestFileImports = append(mockTestFileImports, "reflect", "testing")
+
+		mockTestFile = &GoCodeFile{
+			Name:       mockTestFileName,
+			ImportList: mockTestFileImports, // TODO: add test imports
+		}
+
+		mockTestFile.Code = mockPackageCode
+		mockTestFile.Code += CreateImportList(mockTestFile.ImportList)
+		mockTestFile.Code += mockTestCode
+	}
+
+	return
+}
+
+func CreateImportList(importList []string) (code string) {
+	switch len(importList) {
+	case 0:
+	case 1:
+		code = fmt.Sprintf("import \"%s\"\n\n", importList[0])
+	default:
+		code = fmt.Sprintf("import (\n")
+		for _, Import := range importList {
+			code += fmt.Sprintf("	\"%s\"\n", Import)
+		}
+		code += fmt.Sprintf(")\n\n")
+	}
+	return
+}
+
+func CreateMockFromInterface(iFace *Interface) (mock *Mock) {
 	// TODO: cut "Interface" and other trash
 	// TODO: compare structName with packageName
 	structName := iFace.Name
@@ -412,5 +504,25 @@ func GenCodeTestMethod(mock *Mock, method *Method) {
 	code += fmt.Sprintf("}\n\n")
 
 	method.CodeTest = code
+	return
+}
+
+func SaveGoPackage(Package *GoCodePackage) (err error) {
+	err = os.MkdirAll(Package.Path, 0755)
+	if err != nil {
+		err = fmt.Errorf("create dir %s failed: %w", Package.Path, err)
+		return
+	}
+
+	for _, file := range Package.FileList {
+		// TODO: handle this
+		filePath := Package.Path + "/" + file.Name
+
+		err = ioutil.WriteFile(filePath, []byte(file.Code), 0644)
+		if err != nil {
+			err = fmt.Errorf("write file %s failed: %w", file.Name, err)
+			return
+		}
+	}
 	return
 }

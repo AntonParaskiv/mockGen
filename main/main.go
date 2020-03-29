@@ -1,57 +1,80 @@
 package main
 
 func main() {
-	iFace := &Interface{
-		Name: "Manager",
-		MethodList: []*Method{
+	goPackage := &GoCodePackage{
+		Path:        "examples/ManagerInterface",
+		PackageName: "ManagerInterface",
+		FileList: []*GoCodeFile{
 			{
-				Name: "Registration",
-				ArgList: []*Field{
-					{
-						Name: "nickName",
-						Type: "string",
-					},
-					{
-						Name: "password",
-						Type: "string",
-					},
+				Name: "Manager.go",
+				ImportList: []string{
+					"myFramework",
 				},
-				ResultList: []*Field{
+				InterfaceList: []*Interface{
 					{
-						Name: "accountId",
-						Type: "int64",
-					},
-					{
-						Name: "checkCode",
-						Type: "string",
-					},
-				},
-			},
-			{
-				Name: "SignIn",
-				ArgList: []*Field{
-					{
-						Name: "accountId",
-						Type: "int64",
-					},
-					{
-						Name: "password",
-						Type: "string",
-					},
-				},
-				ResultList: []*Field{
-					{
-						Name: "nickName",
-						Type: "string",
+						Name: "Manager",
+						MethodList: []*Method{
+							{
+								Name: "Registration",
+								ArgList: []*Field{
+									{
+										Name: "nickName",
+										Type: "string",
+									},
+									{
+										Name: "password",
+										Type: "string",
+									},
+								},
+								ResultList: []*Field{
+									{
+										Name: "accountId",
+										Type: "int64",
+									},
+									{
+										Name: "checkCode",
+										Type: "string",
+									},
+								},
+							},
+							{
+								Name: "SignIn",
+								ArgList: []*Field{
+									{
+										Name: "accountId",
+										Type: "int64",
+									},
+									{
+										Name: "password",
+										Type: "string",
+									},
+								},
+								ResultList: []*Field{
+									{
+										Name: "nickName",
+										Type: "string",
+									},
+								},
+							},
+						},
 					},
 				},
 			},
 		},
 	}
 
-	mock := CreateMock(iFace)
-	GenCodeMock(mock)
-	_ = mock
+	//iFace := &Interface
+
+	mockPackage := CreateMockPackage(goPackage)
+
+	err := SaveGoPackage(mockPackage)
+	if err != nil {
+		panic(err)
+	}
+
+	//mockPackage := CreateMockFromInterface(iFace)
+	//GenCodeMock(mockPackage)
+	_ = mockPackage
 
 	//fmt.Println(result)
 	//return
