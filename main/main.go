@@ -7,9 +7,6 @@ func main() {
 		FileList: []*GoCodeFile{
 			{
 				Name: "Manager.go",
-				ImportList: []string{
-					"myFramework",
-				},
 				InterfaceList: []*Interface{
 					{
 						Name: "Manager",
@@ -53,6 +50,26 @@ func main() {
 									{
 										Name: "nickName",
 										Type: "string",
+									},
+								},
+							},
+						},
+					},
+					{
+						Name: "Factory",
+						MethodList: []*Method{
+							{
+								Name: "Create",
+								ArgList: []*Field{
+									{
+										Name: "accountId",
+										Type: "int64",
+									},
+								},
+								ResultList: []*Field{
+									{
+										Name: "manager",
+										Type: "*Manager",
 									},
 								},
 							},
