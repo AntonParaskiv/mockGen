@@ -7,118 +7,15 @@ import (
 )
 
 func main() {
-	//interfacePackage := &GoCodePackage{
-	//	Path:        "examples/ManagerInterface",
-	//	PackageName: "ManagerInterface",
-	//	FileList: []*GoCodeFile{
-	//		{
-	//			Name: "Manager.go",
-	//			InterfaceList: []*Interface{
-	//				{
-	//					Name: "Manager",
-	//					MethodList: []*Method{
-	//						{
-	//							Name: "Registration",
-	//							ArgList: []*Field{
-	//								{
-	//									Name: "nickName",
-	//									Type: "string",
-	//								},
-	//								{
-	//									Name: "password",
-	//									Type: "string",
-	//								},
-	//							},
-	//							ResultList: []*Field{
-	//								{
-	//									Name: "accountId",
-	//									Type: "int64",
-	//								},
-	//								{
-	//									Name: "checkCode",
-	//									Type: "string",
-	//								},
-	//							},
-	//						},
-	//						{
-	//							Name: "SignIn",
-	//							ArgList: []*Field{
-	//								{
-	//									Name: "accountId",
-	//									Type: "int64",
-	//								},
-	//								{
-	//									Name: "password",
-	//									Type: "string",
-	//								},
-	//							},
-	//							ResultList: []*Field{
-	//								{
-	//									Name: "nickName",
-	//									Type: "string",
-	//								},
-	//							},
-	//						},
-	//					},
-	//				},
-	//				//{
-	//				//	Name: "Factory",
-	//				//	MethodList: []*Method{
-	//				//		{
-	//				//			Name: "Create",
-	//				//			ArgList: []*Field{
-	//				//				{
-	//				//					Name: "accountId",
-	//				//					Type: "int64",
-	//				//				},
-	//				//			},
-	//				//			ResultList: []*Field{
-	//				//				{
-	//				//					Name: "manager",
-	//				//					Type: "*Manager",
-	//				//				},
-	//				//			},
-	//				//		},
-	//				//	},
-	//				//},
-	//			},
-	//		},
-	//	},
-	//}
-
 	interfacePackagePath := "examples/ManagerInterface"
 
 	// TODO: Parse Imports
 	interfacePackage := CreateInterfacePackage(interfacePackagePath)
-
 	mockPackage := CreateMockPackage(interfacePackage)
 	err := SaveGoPackage(mockPackage)
 	if err != nil {
 		panic(err)
 	}
-
-	return
-
-	//// TODO: arg get package path
-	////interfacePackagePath := "domain"
-	//interfacePackagePath := "examples/ManagerInterface"
-	//
-	//rPkgs, err := getAstPackage(interfacePackagePath)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//wPkgs, err := makeWPackages(rPkgs)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//_ = wPkgs
-	//
-	//err = savePackages(wPkgs)
-	//if err != nil {
-	//	panic(err)
-	//}
 
 	return
 }
@@ -191,16 +88,28 @@ func CreateInterfaceFromAstInterfaceSpec(astInterfaceSpec *ast.TypeSpec) (iFace 
 			switch astFuncType := astMethod.Type.(type) {
 			case *ast.FuncType:
 				for _, astArg := range astFuncType.Params.List {
+					argName := getNodeName(astArg)
+					astIdent, ok := astArg.Type.(*ast.Ident)
+					if !ok {
+						err = fmt.Errorf("ast type of %s is not ast ident", argName)
+					}
+
 					arg := &Field{
-						Name: getNodeName(astArg),
-						//Type: astArg.Type, // TODO: fill
+						Name: argName,
+						Type: astIdent.Name,
 					}
 					method.ArgList = append(method.ArgList, arg)
 				}
 				for _, astResult := range astFuncType.Results.List {
+					resultName := getNodeName(astResult)
+					astIdent, ok := astResult.Type.(*ast.Ident)
+					if !ok {
+						err = fmt.Errorf("ast type of %s is not ast ident", resultName)
+					}
+
 					result := &Field{
 						Name: getNodeName(astResult),
-						//Type: astResult.Type, // TODO: fill
+						Type: astIdent.Name,
 					}
 					method.ResultList = append(method.ResultList, result)
 				}
