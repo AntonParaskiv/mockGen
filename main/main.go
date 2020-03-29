@@ -168,6 +168,18 @@ func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err 
 			return
 		}
 		fieldType = fmt.Sprintf("[]%s", itemType)
+	case *ast.StructType:
+		fieldType = fmt.Sprintf("struct {\n")
+		for _, item := range astType.Fields.List {
+			var itemType string
+			itemType, err = getFieldTypeFromAstFieldType(item.Type)
+			if err != nil {
+				err = fmt.Errorf("get struct field type failed: %w", err)
+				return
+			}
+			fieldType += fmt.Sprintf("	%s %s\n", getNodeName(item), itemType)
+		}
+		fieldType += fmt.Sprintf("}")
 	default:
 		err = fmt.Errorf("unsupported type")
 		return
