@@ -11,7 +11,9 @@ import (
 func main() {
 	interfacePackagePath := "examples/ManagerInterface"
 
-	codeStorage := CodeStorage.Storage{}
+	codeStorage := CodeStorage.Storage{
+		FormatEnabled: true,
+	}
 	astRepository := AstRepository.Repository{}
 	interactor := usecases.Interactor{}
 	printer := Printer.Printer{}
