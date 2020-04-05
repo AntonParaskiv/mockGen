@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/AntonParaskiv/mockGen/domain"
 	"go/ast"
-	"go/parser"
 	"go/token"
 	"path/filepath"
 )
@@ -12,17 +11,7 @@ import (
 type Repository struct {
 }
 
-func (r *Repository) CreateInterfacePackage(packagePath string) (interfacePackage *domain.GoCodePackage, err error) {
-	astPackage, err := getAstPackage(packagePath)
-	if err != nil {
-		err = fmt.Errorf("get ast package failed: %w", err)
-		return
-	}
-	if astPackage == nil {
-		err = fmt.Errorf("ast package not found")
-		return
-	}
-
+func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath string) (interfacePackage *domain.GoCodePackage, err error) {
 	interfacePackage = &domain.GoCodePackage{
 		Path:        packagePath,
 		PackageName: astPackage.Name,
@@ -178,22 +167,6 @@ func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err 
 		fieldType = fmt.Sprintf("*%s", baseFieldType)
 	default:
 		err = fmt.Errorf("unsupported type")
-		return
-	}
-
-	return
-}
-
-func getAstPackage(packagePath string) (astPackage *ast.Package, err error) {
-	fSet := token.NewFileSet()
-	astPackageList, err := parser.ParseDir(fSet, packagePath, nil, 0)
-	if err != nil {
-		err = fmt.Errorf("parse ast dir failed: %w", err)
-		return
-	}
-
-	for _, astPackageItem := range astPackageList {
-		astPackage = astPackageItem
 		return
 	}
 
