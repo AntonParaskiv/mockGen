@@ -1,97 +1,20 @@
-package main
+package usecases
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
+	"github.com/AntonParaskiv/mockGen/domain"
 	"path/filepath"
 	"strings"
 )
 
-type GoCodePackage struct {
-	Path        string
-	PackageName string
-	FileList    []*GoCodeFile
+type Interactor struct {
 }
 
-type GoCodeFile struct {
-	Name          string
-	InterfaceList []*Interface
-	MockList      []*Mock
-	Code          string
-	ImportList    []string
-}
-
-type Interface struct {
-	Name       string
-	MethodList []*Method
-	ImportList []string
-}
-
-type Mock struct {
-	Struct         *Struct
-	Constructor    *Constructor
-	SetterList     []*Setter
-	MethodList     []*Method
-	CodeImportList []string
-	TestImportList []string
-}
-
-type Struct struct {
-	Name         string
-	ReceiverName string
-	WantName     string
-	GotName      string
-	FieldList    []*Field
-	Code         string
-	ImportList   []string
-}
-
-type Constructor struct {
-	Name           string
-	Code           string
-	CodeTest       string
-	CodeImportList []string
-	TestImportList []string
-}
-
-type Setter struct {
-	Name           string
-	Field          *Field
-	Code           string
-	CodeTest       string
-	CodeImportList []string
-	TestImportList []string
-}
-
-type Method struct {
-	Name               string
-	ArgList            []*Field
-	ResultList         []*Field
-	ArgNameTypeList    []string
-	ResultNameTypeList []string
-	Code               string
-	CodeTest           string
-	CodeImportList     []string
-	TestImportList     []string
-}
-
-type Field struct {
-	Name           string
-	WantName       string
-	GotName        string
-	Type           string
-	NameType       string
-	ExampleValue   string
-	CodeImportList []string
-	TestImportList []string
-}
-
-func CreateMockPackage(interfacePackage *GoCodePackage) (mockPackage *GoCodePackage) {
+func (i *Interactor) CreateMockPackage(interfacePackage *domain.GoCodePackage) (mockPackage *domain.GoCodePackage) {
 	mockPackagePath := cutPostfix(interfacePackage.Path, "Interface") + "Mock"
 	mockPackageName := cutPostfix(interfacePackage.PackageName, "Interface") + "Mock"
 
-	mockPackage = &GoCodePackage{
+	mockPackage = &domain.GoCodePackage{
 		Path:        mockPackagePath,
 		PackageName: mockPackageName,
 	}
@@ -104,7 +27,7 @@ func CreateMockPackage(interfacePackage *GoCodePackage) (mockPackage *GoCodePack
 	return
 }
 
-func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName string) (mockFile *GoCodeFile, mockTestFile *GoCodeFile) {
+func CreateMockFilesFromInterfaceFile(interfaceFile *domain.GoCodeFile, mockPackageName string) (mockFile *domain.GoCodeFile, mockTestFile *domain.GoCodeFile) {
 	var mockCode string
 	var mockTestCode string
 	var mockFileImportList []string
@@ -139,7 +62,7 @@ func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName
 
 	mockPackageCode := fmt.Sprintf("package %s\n\n", mockPackageName)
 
-	mockFile = &GoCodeFile{
+	mockFile = &domain.GoCodeFile{
 		Name:       interfaceFile.Name,
 		ImportList: mockFileImportList,
 	}
@@ -156,7 +79,7 @@ func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName
 	mockTestFileImports := mockTestFileImportList // TODO: replace with deep copy
 	mockTestFileImports = append(mockTestFileImports, "reflect", "testing")
 
-	mockTestFile = &GoCodeFile{
+	mockTestFile = &domain.GoCodeFile{
 		Name:       mockTestFileName,
 		ImportList: mockTestFileImports,
 	}
@@ -167,22 +90,7 @@ func CreateMockFilesFromInterfaceFile(interfaceFile *GoCodeFile, mockPackageName
 	return
 }
 
-func CreateImportList(importList []string) (code string) {
-	switch len(importList) {
-	case 0:
-	case 1:
-		code = fmt.Sprintf("import \"%s\"\n\n", importList[0])
-	default:
-		code = fmt.Sprintf("import (\n")
-		for _, Import := range importList {
-			code += fmt.Sprintf("	\"%s\"\n", Import)
-		}
-		code += fmt.Sprintf(")\n\n")
-	}
-	return
-}
-
-func CreateMockFromInterface(iFace *Interface, mockPackageName string) (mock *Mock) {
+func CreateMockFromInterface(iFace *domain.Interface, mockPackageName string) (mock *domain.Mock) {
 	structName := iFace.Name
 
 	basePackageName := cutPostfix(mockPackageName, "Mock")
@@ -194,21 +102,21 @@ func CreateMockFromInterface(iFace *Interface, mockPackageName string) (mock *Mo
 		constructorName = "New" + toPublic(structName)
 	}
 
-	mock = &Mock{
-		Struct: &Struct{
+	mock = &domain.Mock{
+		Struct: &domain.Struct{
 			Name:         structName,
 			ReceiverName: getReceiverName(structName),
 			WantName:     "want" + toPublic(structName),
 			GotName:      "got" + toPublic(structName),
 		},
-		Constructor: &Constructor{
+		Constructor: &domain.Constructor{
 			Name: constructorName,
 		},
 		MethodList: iFace.MethodList,
 	}
 
-	argList := []*Field{}
-	resultList := []*Field{}
+	argList := []*domain.Field{}
+	resultList := []*domain.Field{}
 	for _, method := range mock.MethodList {
 		for _, arg := range method.ArgList {
 			arg.WantName = "want" + toPublic(arg.Name)
@@ -258,7 +166,7 @@ ResultLoop:
 	}
 
 	for _, field := range mock.Struct.FieldList {
-		mock.SetterList = append(mock.SetterList, &Setter{
+		mock.SetterList = append(mock.SetterList, &domain.Setter{
 			Name:  "Set" + toPublic(field.Name),
 			Field: field,
 		})
@@ -266,7 +174,80 @@ ResultLoop:
 	return
 }
 
-func GenCodeMock(mock *Mock) {
+func CreateImportList(importList []string) (code string) {
+	switch len(importList) {
+	case 0:
+	case 1:
+		code = fmt.Sprintf("import \"%s\"\n\n", importList[0])
+	default:
+		code = fmt.Sprintf("import (\n")
+		for _, Import := range importList {
+			code += fmt.Sprintf("	\"%s\"\n", Import)
+		}
+		code += fmt.Sprintf(")\n\n")
+	}
+	return
+}
+
+func createExampleValue(fieldType string, fieldName string) (exampleValue string, importList []string) {
+	switch {
+	case fieldType == "string":
+		exampleValue = `"my` + toPublic(fieldName) + `"`
+	case fieldType == "interface{}":
+		exampleValue = `"my` + toPublic(fieldName) + `"`
+	case len(fieldType) >= 3 && fieldType[0:3] == "int": // int must be after interface !
+		exampleValue = "100"
+	case len(fieldType) >= 4 && fieldType[0:4] == "uint":
+		exampleValue = "200"
+	case len(fieldType) >= 5 && fieldType[0:5] == "float":
+		exampleValue = "3.14"
+	case fieldType == "bool":
+		exampleValue = "true"
+	case fieldType == "rune":
+		exampleValue = "'X'"
+	case fieldType == "byte":
+		exampleValue = "50"
+	case fieldType == "error":
+		exampleValue = `fmt.Errorf("simulated error")`
+		importList = append(importList, "fmt")
+	case len(fieldType) >= 2 && fieldType[0:2] == "[]":
+		itemType := fieldType[2:]
+		itemExampleValue, itemImportList := createExampleValue(itemType, itemType+"Example")
+		exampleValue = fmt.Sprintf("%s{\n", fieldType)
+		exampleValue += fmt.Sprintf("	%s,\n", itemExampleValue)
+		exampleValue += fmt.Sprintf("}")
+		importList = append(importList, itemImportList...)
+	case len(fieldType) >= 4 && fieldType[0:4] == "map[":
+		keyType, valueType := getMapKeyValueTypes(fieldType)
+		keyExampleValue, keyImportList := createExampleValue(keyType, keyType+"Example")
+		valueExampleValue, valueImportList := createExampleValue(valueType, valueType+"Example")
+
+		exampleValue = fmt.Sprintf("%s{\n", fieldType)
+		exampleValue += fmt.Sprintf("	%s: %s,\n", keyExampleValue, valueExampleValue)
+		exampleValue += fmt.Sprintf("}")
+
+		importList = append(importList, keyImportList...)
+		importList = append(importList, valueImportList...)
+
+		// TODO: struct
+		// TODO: custom type
+
+		// TODO: ptr string
+		// TODO: ptr int
+		// TODO: ptr uint
+		// TODO: ptr float
+		// TODO: ptr bool
+		// TODO: ptr rune
+		// TODO: ptr byte
+		// TODO: ptr error
+		// TODO: ptr array
+		// TODO: ptr map
+
+	}
+	return
+}
+
+func GenCodeMock(mock *domain.Mock) {
 
 	GenCodeStruct(mock)
 	GenCodeConstructor(mock)
@@ -284,7 +265,7 @@ func GenCodeMock(mock *Mock) {
 	return
 }
 
-func GenCodeStruct(mock *Mock) {
+func GenCodeStruct(mock *domain.Mock) {
 	var code string
 	code += fmt.Sprintf("type %s struct {\n", mock.Struct.Name)
 	for _, field := range mock.Struct.FieldList {
@@ -295,7 +276,7 @@ func GenCodeStruct(mock *Mock) {
 	return
 }
 
-func GenCodeConstructor(mock *Mock) {
+func GenCodeConstructor(mock *domain.Mock) {
 	var code string
 	code += fmt.Sprintf("func %s() (%s *%s) {\n", mock.Constructor.Name, mock.Struct.ReceiverName, mock.Struct.Name)
 	code += fmt.Sprintf("	%s = new(%s)\n", mock.Struct.ReceiverName, mock.Struct.Name)
@@ -305,7 +286,7 @@ func GenCodeConstructor(mock *Mock) {
 	return
 }
 
-func GenCodeTestConstructor(mock *Mock) {
+func GenCodeTestConstructor(mock *domain.Mock) {
 	var code string
 	code += fmt.Sprintf("func Test%s(t *testing.T) {\n", mock.Constructor.Name)
 
@@ -333,7 +314,7 @@ func GenCodeTestConstructor(mock *Mock) {
 	return
 }
 
-func GenCodeSetter(mock *Mock, setter *Setter) {
+func GenCodeSetter(mock *domain.Mock, setter *domain.Setter) {
 	var code string
 	code += fmt.Sprintf("func (%s *%s) %s(%s %s) *%s{\n", mock.Struct.ReceiverName, mock.Struct.Name, setter.Name, setter.Field.Name, setter.Field.Type, mock.Struct.Name)
 	code += fmt.Sprintf("	%s.%s = %s\n", mock.Struct.ReceiverName, setter.Field.Name, setter.Field.Name)
@@ -343,7 +324,7 @@ func GenCodeSetter(mock *Mock, setter *Setter) {
 	return
 }
 
-func GenCodeTestSetter(mock *Mock, setter *Setter) {
+func GenCodeTestSetter(mock *domain.Mock, setter *domain.Setter) {
 	var code string
 	code += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Struct.Name, setter.Name)
 
@@ -382,7 +363,7 @@ func GenCodeTestSetter(mock *Mock, setter *Setter) {
 	return
 }
 
-func GenCodeMethod(mock *Mock, method *Method) {
+func GenCodeMethod(mock *domain.Mock, method *domain.Method) {
 	var code string
 
 	argLine := strings.Join(method.ArgNameTypeList, ", ")
@@ -403,7 +384,7 @@ func GenCodeMethod(mock *Mock, method *Method) {
 	return
 }
 
-func GenCodeTestMethod(mock *Mock, method *Method) {
+func GenCodeTestMethod(mock *domain.Mock, method *domain.Method) {
 	var code string
 
 	//tt.args.nickName, tt.args.password
@@ -501,96 +482,52 @@ func GenCodeTestMethod(mock *Mock, method *Method) {
 	method.CodeTest = code
 	return
 }
-
-func SaveGoPackage(Package *GoCodePackage) (err error) {
-	err = os.MkdirAll(Package.Path, 0755)
-	if err != nil {
-		err = fmt.Errorf("create dir %s failed: %w", Package.Path, err)
-		return
-	}
-
-	for _, file := range Package.FileList {
-		filePath := filepath.Join(Package.Path, file.Name)
-
-		//var formattedCode []byte
-		//formattedCode, err = imports.Process("", []byte(file.Code), &imports.Options{
-		//	Fragment:   false,
-		//	AllErrors:  true,
-		//	Comments:   true,
-		//	TabIndent:  true,
-		//	TabWidth:   8,
-		//	FormatOnly: false,
-		//})
-		//if err != nil {
-		//	err = fmt.Errorf("format file %s code failed: %s", file.Name, err)
-		//	return
-		//}
-
-		//err = ioutil.WriteFile(filePath, formattedCode, 0644)
-		err = ioutil.WriteFile(filePath, []byte(file.Code), 0644)
-		if err != nil {
-			err = fmt.Errorf("write file %s failed: %w", file.Name, err)
-			return
+func cutPostfix(text, postfix string) (shortCutText string) {
+	lenPostfix := len(postfix)
+	if len(text) > lenPostfix {
+		startPostfix := len(text) - lenPostfix
+		packageNamePostfix := text[startPostfix:]
+		if packageNamePostfix == postfix {
+			shortCutText = text[0:startPostfix]
 		}
 	}
 	return
 }
 
-func createExampleValue(fieldType string, fieldName string) (exampleValue string, importList []string) {
-	switch {
-	case fieldType == "string":
-		exampleValue = `"my` + toPublic(fieldName) + `"`
-	case fieldType == "interface{}":
-		exampleValue = `"my` + toPublic(fieldName) + `"`
-	case len(fieldType) >= 3 && fieldType[0:3] == "int": // int must be after interface !
-		exampleValue = "100"
-	case len(fieldType) >= 4 && fieldType[0:4] == "uint":
-		exampleValue = "200"
-	case len(fieldType) >= 5 && fieldType[0:5] == "float":
-		exampleValue = "3.14"
-	case fieldType == "bool":
-		exampleValue = "true"
-	case fieldType == "rune":
-		exampleValue = "'X'"
-	case fieldType == "byte":
-		exampleValue = "50"
-	case fieldType == "error":
-		exampleValue = `fmt.Errorf("simulated error")`
-		importList = append(importList, "fmt")
-	case len(fieldType) >= 2 && fieldType[0:2] == "[]":
-		itemType := fieldType[2:]
-		itemExampleValue, itemImportList := createExampleValue(itemType, itemType+"Example")
-		exampleValue = fmt.Sprintf("%s{\n", fieldType)
-		exampleValue += fmt.Sprintf("	%s,\n", itemExampleValue)
-		exampleValue += fmt.Sprintf("}")
-		importList = append(importList, itemImportList...)
-	case len(fieldType) >= 4 && fieldType[0:4] == "map[":
-		keyType, valueType := getMapKeyValueTypes(fieldType)
-		keyExampleValue, keyImportList := createExampleValue(keyType, keyType+"Example")
-		valueExampleValue, valueImportList := createExampleValue(valueType, valueType+"Example")
-
-		exampleValue = fmt.Sprintf("%s{\n", fieldType)
-		exampleValue += fmt.Sprintf("	%s: %s,\n", keyExampleValue, valueExampleValue)
-		exampleValue += fmt.Sprintf("}")
-
-		importList = append(importList, keyImportList...)
-		importList = append(importList, valueImportList...)
-
-		// TODO: struct
-		// TODO: custom type
-
-		// TODO: ptr string
-		// TODO: ptr int
-		// TODO: ptr uint
-		// TODO: ptr float
-		// TODO: ptr bool
-		// TODO: ptr rune
-		// TODO: ptr byte
-		// TODO: ptr error
-		// TODO: ptr array
-		// TODO: ptr map
-
+func createTestFilePath(filePath string) (testFilePath string) {
+	extension := filepath.Ext(filePath)
+	if extension == ".go" {
+		filePathLen := len(filePath)
+		testFilePath = filePath[:filePathLen-3] + "_test.go"
 	}
+	return
+}
+
+func toPublic(name string) (publicName string) {
+	firstLetterUpper := strings.ToUpper(getFirstLetter(name))
+	publicName = firstLetterUpper + getFollowingLetters(name)
+	return
+}
+
+func toPrivate(name string) (privateName string) {
+	firstLetterLower := strings.ToLower(getFirstLetter(name))
+	privateName = firstLetterLower + getFollowingLetters(name)
+	return
+}
+
+func getFirstLetter(text string) (firstLetter string) {
+	firstLetter = text[0:1]
+	return
+}
+
+func getFollowingLetters(text string) (followingLetters string) {
+	followingLetters = text[1:]
+	return
+}
+
+// Mock -> s
+func getReceiverName(name string) (receiverName string) {
+	receiverName = toPrivate(getFirstLetter(name))
 	return
 }
 
