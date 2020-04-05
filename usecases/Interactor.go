@@ -19,28 +19,28 @@ func (i *Interactor) CreateMockPackage(interfacePackage *domain.GoCodePackage) (
 	}
 
 	for _, interfaceFile := range interfacePackage.FileList {
-		mockFile := CreateMockFilesFromInterfaceFile(interfaceFile, mockPackageName)
+		mockFile := createMockFilesFromInterfaceFile(interfaceFile, mockPackageName)
 		mockPackage.FileList = append(mockPackage.FileList, mockFile)
 	}
 
 	return
 }
 
-func CreateMockFilesFromInterfaceFile(interfaceFile *domain.GoCodeFile, mockPackageName string) (mockFile *domain.GoCodeFile) {
+func createMockFilesFromInterfaceFile(interfaceFile *domain.GoCodeFile, mockPackageName string) (mockFile *domain.GoCodeFile) {
 	mockFile = &domain.GoCodeFile{
 		Name:       interfaceFile.Name,
 		ImportList: append([]string{}, interfaceFile.ImportList...),
 	}
 
 	for _, iFace := range interfaceFile.InterfaceList {
-		mock := CreateMockFromInterface(iFace, mockPackageName)
+		mock := createMockFromInterface(iFace, mockPackageName)
 		mockFile.MockList = append(mockFile.MockList, mock)
 	}
 
 	return
 }
 
-func CreateMockFromInterface(iFace *domain.Interface, mockPackageName string) (mock *domain.Mock) {
+func createMockFromInterface(iFace *domain.Interface, mockPackageName string) (mock *domain.Mock) {
 	structName := iFace.Name
 
 	basePackageName := cutPostfix(mockPackageName, "Mock")
@@ -163,6 +163,9 @@ func createExampleValue(fieldType string, fieldName string) (exampleValue string
 
 		importList = append(importList, keyImportList...)
 		importList = append(importList, valueImportList...)
+
+	default:
+		fmt.Println("unknown type:", fieldType)
 
 		// TODO: struct
 		// TODO: custom type

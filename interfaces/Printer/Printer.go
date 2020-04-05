@@ -25,7 +25,7 @@ func (p *Printer) GenerateCode(mockPackage *domain.GoCodePackage) {
 		}
 
 		for _, mock := range mockFile.MockList {
-			GenCodeMock(mock)
+			genCodeMock(mock)
 			mockCode += mock.Struct.Code
 			mockCode += mock.Constructor.Code
 			mockTestCode += mock.Constructor.CodeTest
@@ -52,7 +52,7 @@ func (p *Printer) GenerateCode(mockPackage *domain.GoCodePackage) {
 		mockPackageCode := fmt.Sprintf("package %s\n\n", mockPackage.PackageName)
 
 		mockFile.Code = mockPackageCode
-		mockFile.Code += CreateImportList(mockFile.ImportList)
+		mockFile.Code += createImportList(mockFile.ImportList)
 		mockFile.Code += mockCode
 
 		if len(mockTestCode) == 0 {
@@ -60,7 +60,7 @@ func (p *Printer) GenerateCode(mockPackage *domain.GoCodePackage) {
 		}
 
 		mockTestFile.Code = mockPackageCode
-		mockTestFile.Code += CreateImportList(mockTestFile.ImportList)
+		mockTestFile.Code += createImportList(mockTestFile.ImportList)
 		mockTestFile.Code += mockTestCode
 
 		mockPackage.FileList = append(mockPackage.FileList, mockTestFile)
@@ -69,25 +69,25 @@ func (p *Printer) GenerateCode(mockPackage *domain.GoCodePackage) {
 	return
 }
 
-func GenCodeMock(mock *domain.Mock) {
+func genCodeMock(mock *domain.Mock) {
 
-	GenCodeStruct(mock)
-	GenCodeConstructor(mock)
-	GenCodeTestConstructor(mock)
+	genCodeStruct(mock)
+	genCodeConstructor(mock)
+	genCodeTestConstructor(mock)
 
 	for _, setter := range mock.SetterList {
-		GenCodeSetter(mock, setter)
-		GenCodeTestSetter(mock, setter)
+		genCodeSetter(mock, setter)
+		genCodeTestSetter(mock, setter)
 	}
 
 	for _, method := range mock.MethodList {
-		GenCodeMethod(mock, method)
-		GenCodeTestMethod(mock, method)
+		genCodeMethod(mock, method)
+		genCodeTestMethod(mock, method)
 	}
 	return
 }
 
-func GenCodeStruct(mock *domain.Mock) {
+func genCodeStruct(mock *domain.Mock) {
 	var code string
 	code += fmt.Sprintf("type %s struct {\n", mock.Struct.Name)
 	for _, field := range mock.Struct.FieldList {
@@ -98,7 +98,7 @@ func GenCodeStruct(mock *domain.Mock) {
 	return
 }
 
-func GenCodeConstructor(mock *domain.Mock) {
+func genCodeConstructor(mock *domain.Mock) {
 	var code string
 	code += fmt.Sprintf("func %s() (%s *%s) {\n", mock.Constructor.Name, mock.Struct.ReceiverName, mock.Struct.Name)
 	code += fmt.Sprintf("	%s = new(%s)\n", mock.Struct.ReceiverName, mock.Struct.Name)
@@ -108,7 +108,7 @@ func GenCodeConstructor(mock *domain.Mock) {
 	return
 }
 
-func GenCodeTestConstructor(mock *domain.Mock) {
+func genCodeTestConstructor(mock *domain.Mock) {
 	var code string
 	code += fmt.Sprintf("func Test%s(t *testing.T) {\n", mock.Constructor.Name)
 
@@ -136,7 +136,7 @@ func GenCodeTestConstructor(mock *domain.Mock) {
 	return
 }
 
-func GenCodeSetter(mock *domain.Mock, setter *domain.Setter) {
+func genCodeSetter(mock *domain.Mock, setter *domain.Setter) {
 	var code string
 	code += fmt.Sprintf("func (%s *%s) %s(%s %s) *%s{\n", mock.Struct.ReceiverName, mock.Struct.Name, setter.Name, setter.Field.Name, setter.Field.Type, mock.Struct.Name)
 	code += fmt.Sprintf("	%s.%s = %s\n", mock.Struct.ReceiverName, setter.Field.Name, setter.Field.Name)
@@ -146,7 +146,7 @@ func GenCodeSetter(mock *domain.Mock, setter *domain.Setter) {
 	return
 }
 
-func GenCodeTestSetter(mock *domain.Mock, setter *domain.Setter) {
+func genCodeTestSetter(mock *domain.Mock, setter *domain.Setter) {
 	var code string
 	code += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Struct.Name, setter.Name)
 
@@ -185,7 +185,7 @@ func GenCodeTestSetter(mock *domain.Mock, setter *domain.Setter) {
 	return
 }
 
-func GenCodeMethod(mock *domain.Mock, method *domain.Method) {
+func genCodeMethod(mock *domain.Mock, method *domain.Method) {
 	var code string
 
 	argLine := strings.Join(method.ArgNameTypeList, ", ")
@@ -206,7 +206,7 @@ func GenCodeMethod(mock *domain.Mock, method *domain.Method) {
 	return
 }
 
-func GenCodeTestMethod(mock *domain.Mock, method *domain.Method) {
+func genCodeTestMethod(mock *domain.Mock, method *domain.Method) {
 	var code string
 
 	//tt.args.nickName, tt.args.password
@@ -305,7 +305,7 @@ func GenCodeTestMethod(mock *domain.Mock, method *domain.Method) {
 	return
 }
 
-func CreateImportList(importList []string) (code string) {
+func createImportList(importList []string) (code string) {
 	switch len(importList) {
 	case 0:
 	case 1:

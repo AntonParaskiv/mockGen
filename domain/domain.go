@@ -14,6 +14,11 @@ type GoCodeFile struct {
 	ImportList    []string
 }
 
+type Import struct {
+	Name string
+	Path string
+}
+
 type Interface struct {
 	Name       string
 	MethodList []*Method
@@ -73,6 +78,7 @@ type Field struct {
 	WantName       string
 	GotName        string
 	Type           string
+	BaseType       *Field
 	NameType       string
 	ExampleValue   string
 	CodeImportList []string

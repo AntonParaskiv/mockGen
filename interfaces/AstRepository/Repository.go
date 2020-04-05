@@ -3,12 +3,15 @@ package AstRepository
 import (
 	"fmt"
 	"github.com/AntonParaskiv/mockGen/domain"
+	"github.com/AntonParaskiv/mockGen/infrastructure/CodeStorage"
 	"go/ast"
 	"go/token"
+	"os"
 	"path/filepath"
 )
 
 type Repository struct {
+	CodeStorage CodeStorage.Storage
 }
 
 func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath string) (interfacePackage *domain.GoCodePackage, err error) {
@@ -30,7 +33,7 @@ func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath
 		astInterfaceSpecs := getInterfaces(astFile)
 		for _, astInterfaceSpec := range astInterfaceSpecs {
 			var iFace *domain.Interface
-			iFace, err = CreateInterfaceFromAstInterfaceSpec(astInterfaceSpec)
+			iFace, err = createInterfaceFromAstInterfaceSpec(astInterfaceSpec)
 			if err != nil {
 				err = fmt.Errorf("create interface from ast interface spec failed: %w", err)
 				return
@@ -52,7 +55,7 @@ func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath
 	return
 }
 
-func CreateInterfaceFromAstInterfaceSpec(astInterfaceSpec *ast.TypeSpec) (iFace *domain.Interface, err error) {
+func createInterfaceFromAstInterfaceSpec(astInterfaceSpec *ast.TypeSpec) (iFace *domain.Interface, err error) {
 	iFace = &domain.Interface{
 		Name: astInterfaceSpec.Name.Name,
 	}
@@ -157,6 +160,8 @@ func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err 
 	// custom types // TODO: handle imports
 	case *ast.SelectorExpr:
 		fieldType = fmt.Sprintf("%s.%s", getNodeName(astType.X), getNodeName(astType.Sel))
+		// TODO: get baseType
+
 	case *ast.StarExpr:
 		var baseFieldType string
 		baseFieldType, err = getFieldTypeFromAstFieldType(astType.X)
@@ -236,5 +241,32 @@ func getNodeName(node ast.Node) (name string) {
 	default:
 		panic(fmt.Sprintf("no getting name case for type %T", node))
 	}
+	return
+}
+
+func (r *Repository) GetTypeDeclarationFromPackage(packagePath, typeName string) (typeSpec *ast.TypeSpec) {
+	fullPackagePath := filepath.Join(os.Getenv("GOPATH"), "src", packagePath)
+	astPackage, err := r.CodeStorage.GetAstPackage(fullPackagePath)
+	if err != nil {
+		err = fmt.Errorf("get ast package %s failed: %w", packagePath, err)
+		return
+	}
+
+	for _, astFile := range astPackage.Files {
+		for _, decl := range astFile.Decls {
+			switch decl := decl.(type) {
+			case *ast.GenDecl:
+				switch decl.Tok {
+				case token.TYPE:
+					spec := decl.Specs[0].(*ast.TypeSpec) // TODO: check array
+					if getNodeName(spec) == typeName {
+						typeSpec = spec
+						return
+					}
+				}
+			}
+		}
+	}
+
 	return
 }

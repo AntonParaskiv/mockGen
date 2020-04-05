@@ -12,9 +12,16 @@ func main() {
 	interfacePackagePath := "examples/ManagerInterface"
 
 	codeStorage := CodeStorage.Storage{
-		FormatEnabled: true,
+		FormatEnabled: false,
 	}
-	astRepository := AstRepository.Repository{}
+	astRepository := AstRepository.Repository{
+		CodeStorage: codeStorage,
+	}
+
+	//spec := astRepository.GetTypeDeclarationFromPackage("github.com/AntonParaskiv/mockGen/examples", "Password")
+	//_ = spec
+	//return
+
 	interactor := usecases.Interactor{}
 	printer := Printer.Printer{}
 
