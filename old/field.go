@@ -1,10 +1,13 @@
-package main
+package old
 
-import "go/ast"
+import (
+	"github.com/AntonParaskiv/mockGen/main"
+	"go/ast"
+)
 
 func createField(name string, Type ast.Expr) (field *ast.Field) {
 	field = &ast.Field{
-		Names: createNames(name),
+		Names: main.createNames(name),
 		Type:  Type,
 	}
 	return
@@ -18,9 +21,9 @@ func createFieldFromExpr(expr ast.Expr) (field *ast.Field) {
 }
 
 func isFieldExistInFieldList(fieldList []*ast.Field, wantField *ast.Field) (isExist bool) {
-	name := getNodeName(wantField)
+	name := main.getNodeName(wantField)
 	for _, field := range fieldList {
-		if getNodeName(field) == name {
+		if main.getNodeName(field) == name {
 			isExist = true
 			return
 		}

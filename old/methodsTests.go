@@ -1,6 +1,7 @@
-package main
+package old
 
 import (
+	"github.com/AntonParaskiv/mockGen/main"
 	"go/ast"
 	"go/token"
 )
@@ -11,13 +12,13 @@ func createTestMethodName(structName, methodName string) (methodTestName string)
 }
 
 func createMethodTest(paramList, resultList []*ast.Field, structName, methodName, testMethodName, receiverName string, pointerStruct *ast.StarExpr, namedPointerStruct *ast.Field) (methodTestDecl *ast.FuncDecl) {
-	name := createName(testMethodName)
+	name := main.createName(testMethodName)
 	args := createFieldList(namedPointerTestingT)
-	wantReceiver := "want" + toPublic(structName)
+	wantReceiver := "want" + main.toPublic(structName)
 
 	methodTestDecl = createFuncDecl(nil, name, args, nil,
-		createDeclStruct("fields", resultList...),
-		createDeclStruct("args", paramList...),
+		main.createDeclStruct("fields", resultList...),
+		main.createDeclStruct("args", paramList...),
 		createMethodStmtTestsDeclare(structName, wantReceiver, pointerStruct, paramList, resultList),
 		createMethodStmtTestsRun(methodName, receiverName, wantReceiver, "got", structName, paramList, resultList),
 		returnStmt,
@@ -32,11 +33,11 @@ func createMethodStmtTestsDeclare(structName, wantReceiver string, pointerStruct
 	// test := []struct{...}{...}
 	stmtTestsDeclare = createAssignStmt(
 		// tests
-		createExprList(createName("tests")),
+		main.createExprList(main.createName("tests")),
 		// :=
 		token.DEFINE,
 		// []struct{...}{...}
-		createExprList(testTable),
+		main.createExprList(testTable),
 	)
 
 	return
@@ -46,15 +47,15 @@ func createMethodTestTable(structName, wantReceiver string, pointerStruct *ast.S
 	testTableFields := make([]*ast.Field, 0)
 	testTableFields = append(testTableFields,
 		// name string
-		createField("name", createName("string")),
+		createField("name", main.createName("string")),
 		// fields string
-		createField("fields", createName("fields")),
+		createField("fields", main.createName("fields")),
 		// args string
-		createField("args", createName("args")),
+		createField("args", main.createName("args")),
 	)
 
 	for _, result := range methodResultList {
-		wantResultName := "want" + toPublic(getNodeName(result))
+		wantResultName := "want" + main.toPublic(main.getNodeName(result))
 		wantResult := createField(wantResultName, result.Type)
 		testTableFields = append(testTableFields, wantResult)
 	}
@@ -64,7 +65,7 @@ func createMethodTestTable(structName, wantReceiver string, pointerStruct *ast.S
 		createField(wantReceiver, pointerStruct),
 	)
 
-	testTableRows := createExprList(
+	testTableRows := main.createExprList(
 		// Success
 		createTestRowMethod(wantReceiver, structName, methodParamList, methodResultList),
 	)
@@ -80,8 +81,8 @@ func createTestRowMethod(wantReceiver, structName string, methodParamList, metho
 	// Field: "myField"
 	fieldsKeyValue := make([]ast.Expr, 0)
 	for _, result := range methodResultList {
-		fieldKeyValue := createKeyValueExpr(
-			getNodeName(result),
+		fieldKeyValue := main.createKeyValueExpr(
+			main.getNodeName(result),
 			generateTestValue(result),
 		)
 		fieldsKeyValue = append(fieldsKeyValue, fieldKeyValue)
@@ -90,8 +91,8 @@ func createTestRowMethod(wantReceiver, structName string, methodParamList, metho
 	// arg: "myArg"
 	argsKeyValue := make([]ast.Expr, 0)
 	for _, param := range methodParamList {
-		fieldKeyValue := createKeyValueExpr(
-			getNodeName(param),
+		fieldKeyValue := main.createKeyValueExpr(
+			main.getNodeName(param),
 			generateTestValue(param),
 		)
 		argsKeyValue = append(argsKeyValue, fieldKeyValue)
@@ -105,26 +106,26 @@ func createTestRowMethod(wantReceiver, structName string, methodParamList, metho
 	testRowBody := make([]ast.Expr, 0)
 	testRowBody = append(testRowBody,
 		createTestName(`"Success"`),
-		createKeyValueExpr(
+		main.createKeyValueExpr(
 			"fields",
-			createCompositeLit(
-				createName("fields"),
+			main.createCompositeLit(
+				main.createName("fields"),
 				fieldsKeyValue...,
 			),
 		),
-		createKeyValueExpr(
+		main.createKeyValueExpr(
 			"args",
-			createCompositeLit(
-				createName("args"),
+			main.createCompositeLit(
+				main.createName("args"),
 				argsKeyValue...,
 			),
 		),
 	)
 
 	for _, result := range methodResultList {
-		wantResult := "want" + toPublic(getNodeName(result))
+		wantResult := "want" + main.toPublic(main.getNodeName(result))
 		testRowBody = append(testRowBody,
-			createKeyValueExpr(
+			main.createKeyValueExpr(
 				wantResult,
 				generateTestValue(result),
 			),
@@ -132,14 +133,14 @@ func createTestRowMethod(wantReceiver, structName string, methodParamList, metho
 	}
 
 	testRowBody = append(testRowBody,
-		createKeyValueExpr(
+		main.createKeyValueExpr(
 			wantReceiver,
-			initStructLiteral(structName, resultFields...),
+			main.initStructLiteral(structName, resultFields...),
 			//initStructLiteral(structName),
 		),
 	)
 
-	testRow = createCompositeLit(nil, testRowBody...)
+	testRow = main.createCompositeLit(nil, testRowBody...)
 	return
 }
 
@@ -148,14 +149,14 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 
 	settingFieldsExprs := make([]ast.Expr, 0, len(methodResultList))
 	for _, result := range methodResultList {
-		setting := createKeyValueExpr(
-			getNodeName(result),
-			createSelectorExpr(
-				createSelectorExpr(
-					createName("tt"),
-					createName("fields"),
+		setting := main.createKeyValueExpr(
+			main.getNodeName(result),
+			main.createSelectorExpr(
+				main.createSelectorExpr(
+					main.createName("tt"),
+					main.createName("fields"),
 				),
-				createName(getNodeName(result)),
+				main.createName(main.getNodeName(result)),
 			),
 		)
 		settingFieldsExprs = append(settingFieldsExprs, setting)
@@ -166,12 +167,12 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 		// s := &Mock{ Field: Field }
 		createAssignStmt(
 			// s
-			createExprList(createName(receiverName)),
+			main.createExprList(main.createName(receiverName)),
 			// :=
 			token.DEFINE,
 			// &Mock{ Field: Field }
-			createExprList(
-				initStructLiteral(structName, settingFieldsExprs...),
+			main.createExprList(
+				main.initStructLiteral(structName, settingFieldsExprs...),
 			),
 		),
 	)
@@ -179,16 +180,16 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 	// prepare method execute
 	gotResults := make([]ast.Expr, 0)
 	for _, result := range methodResultList {
-		gotResults = append(gotResults, createName("got"+toPublic(getNodeName(result))))
+		gotResults = append(gotResults, main.createName("got"+main.toPublic(main.getNodeName(result))))
 	}
 	args := make([]ast.Expr, 0)
 	for _, param := range methodParamList {
-		args = append(args, createSelectorExpr(
-			createSelectorExpr(
-				createName("tt"),
-				createName("args"),
+		args = append(args, main.createSelectorExpr(
+			main.createSelectorExpr(
+				main.createName("tt"),
+				main.createName("args"),
 			),
-			createName(getNodeName(param)),
+			main.createName(main.getNodeName(param)),
 		),
 		)
 	}
@@ -197,12 +198,12 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 		// gotField1, gotField2 := s.Method(tt.args.arg1, tt.args.arg2)
 		createAssignStmt(
 			// gotField1, gotField2
-			createExprList(gotResults...),
+			main.createExprList(gotResults...),
 			// :=
 			token.DEFINE,
 			// s.Method(tt.args.arg1, tt.args.arg2)
-			createExprList(createCallExpr(
-				createSelectorExpr(createName(receiverName), createName(methodName)),
+			main.createExprList(createCallExpr(
+				main.createSelectorExpr(main.createName(receiverName), main.createName(methodName)),
 				args...,
 			)),
 		),
@@ -210,13 +211,13 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 
 	// compare wantResults
 	for _, param := range methodResultList {
-		gotResult := "got" + toPublic(getNodeName(param))
-		wantResult := "want" + toPublic(getNodeName(param))
+		gotResult := "got" + main.toPublic(main.getNodeName(param))
+		wantResult := "want" + main.toPublic(main.getNodeName(param))
 		ttWantResult := createTTSelector(wantResult)
 
 		// !reflect.DeepEqual(gotField, tt.wantField)
 		compareResultCondition := createNotDeepEqualExpr(
-			createName(gotResult),
+			main.createName(gotResult),
 			ttWantResult,
 		)
 
@@ -224,7 +225,7 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 		compareResultErrorf := createTestCompareResultErrorf(
 			gotResult,
 			"want",
-			createName(gotResult),
+			main.createName(gotResult),
 			ttWantResult,
 		)
 
@@ -242,13 +243,13 @@ func createMethodStmtTestsRun(methodName, receiverName, wantReceiver, gotReceive
 	// compare self block
 	ttWantReceiver := createTTSelector(wantReceiver)
 	compareStructCondition := createNotDeepEqualExpr(
-		createName(receiverName),
+		main.createName(receiverName),
 		ttWantReceiver,
 	)
 	compareStructErrorf := createTestCompareResultErrorf(
 		structName,
 		"want",
-		createName(receiverName),
+		main.createName(receiverName),
 		ttWantReceiver,
 	)
 	runStmts = append(runStmts,

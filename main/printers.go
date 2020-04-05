@@ -564,13 +564,55 @@ func createExampleValue(fieldType string, fieldName string) (exampleValue string
 		exampleValue += fmt.Sprintf("	%s,\n", itemExampleValue)
 		exampleValue += fmt.Sprintf("}")
 		importList = append(importList, itemImportList...)
+	case len(fieldType) >= 4 && fieldType[0:4] == "map[":
+		keyType, valueType := getMapKeyValueTypes(fieldType)
+		keyExampleValue, keyImportList := createExampleValue(keyType, keyType+"Example")
+		valueExampleValue, valueImportList := createExampleValue(valueType, valueType+"Example")
 
-		// TODO: map
+		exampleValue = fmt.Sprintf("%s{\n", fieldType)
+		exampleValue += fmt.Sprintf("	%s: %s,\n", keyExampleValue, valueExampleValue)
+		exampleValue += fmt.Sprintf("}")
+
+		importList = append(importList, keyImportList...)
+		importList = append(importList, valueImportList...)
+
 		// TODO: struct
-
 		// TODO: custom type
-		// TODO: custom struct
+
+		// TODO: ptr string
+		// TODO: ptr int
+		// TODO: ptr uint
+		// TODO: ptr float
+		// TODO: ptr bool
+		// TODO: ptr rune
+		// TODO: ptr byte
+		// TODO: ptr error
+		// TODO: ptr array
+		// TODO: ptr map
 
 	}
+	return
+}
+
+func getMapKeyValueTypes(fieldType string) (keyType, valueType string) {
+	fieldType = fieldType[3:]
+	openedBracketNum := 0
+	i := 0
+	var char rune
+
+	for i, char = range fieldType {
+		if char == '[' {
+			openedBracketNum++
+		}
+		if char == ']' {
+			openedBracketNum--
+		}
+		if openedBracketNum == 0 {
+			i++
+			break
+		}
+	}
+	keyType = fieldType[1 : i-1]
+	valueType = fieldType[i:]
 	return
 }

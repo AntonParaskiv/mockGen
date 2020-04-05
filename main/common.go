@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/token"
+	"path/filepath"
 	"strings"
 )
 
@@ -47,78 +49,93 @@ func getFollowingLetters(text string) (followingLetters string) {
 	return
 }
 
-func createName(name string) (names *ast.Ident) {
-	names = &ast.Ident{
-		Name: name,
+// Mock -> s
+func getReceiverName(name string) (receiverName string) {
+	receiverName = toPrivate(getFirstLetter(name))
+	return
+}
+
+func isFileNameMatchGoCode(fileName string) (isMatch bool) {
+	// check non-go files
+	fileExtension := filepath.Ext(fileName)
+	if fileExtension != ".go" {
+		return
+	}
+
+	// check test files
+	pattern := "_test.go"
+	fileNameEndingStartPosition := len(fileName) - len(pattern)
+	if fileNameEndingStartPosition < 0 {
+		isMatch = true
+		return
+	}
+	fileNameEnding := fileName[fileNameEndingStartPosition:]
+	if fileNameEnding != pattern {
+		isMatch = true
+		return
+	}
+
+	return
+}
+
+func createTestFilePath(filePath string) (testFilePath string) {
+	extension := filepath.Ext(filePath)
+	if extension == ".go" {
+		filePathLen := len(filePath)
+		testFilePath = filePath[:filePathLen-3] + "_test.go"
 	}
 	return
 }
 
-func createNames(name string) (names []*ast.Ident) {
-	names = []*ast.Ident{
-		{
-			Name: name,
-		},
+func getInterfaces(f *ast.File) (interfaceSpecs []*ast.TypeSpec) {
+	interfaceSpecs = make([]*ast.TypeSpec, 0)
+
+	for _, decl := range f.Decls {
+		switch decl := decl.(type) {
+		case *ast.GenDecl:
+			switch decl.Tok {
+
+			// объявления типов
+			case token.TYPE:
+				spec := decl.Specs[0].(*ast.TypeSpec) // TODO: check array
+
+				switch spec.Type.(type) {
+
+				// тип interface
+				case *ast.InterfaceType:
+					interfaceSpecs = append(interfaceSpecs, spec)
+				}
+			}
+		}
 	}
+
 	return
 }
 
-func createExprList(exprs ...ast.Expr) (exprList []ast.Expr) {
-	for _, expr := range exprs {
-		exprList = append(exprList, expr)
+func getAstPackage(packagePath string) (astPackage *ast.Package, err error) {
+	fSet := token.NewFileSet()
+	astPackageList, err := parser.ParseDir(fSet, packagePath, nil, 0)
+	if err != nil {
+		err = fmt.Errorf("parse ast dir failed: %w", err)
+		return
 	}
+
+	for _, astPackageItem := range astPackageList {
+		astPackage = astPackageItem
+		return
+	}
+
 	return
 }
 
-func createKeyValueExpr(key string, value ast.Expr) (keyValueExpr *ast.KeyValueExpr) {
-	keyValueExpr = &ast.KeyValueExpr{
-		Key:   createName(key),
-		Value: value,
-	}
-	return
-}
-
-func createSelectorExpr(expression ast.Expr, fieldSelector *ast.Ident) (selectorExpr *ast.SelectorExpr) {
-	selectorExpr = &ast.SelectorExpr{
-		X:   expression,
-		Sel: fieldSelector,
-	}
-	return
-}
-
-func createBasicLit(value string, kind token.Token) (basicLit *ast.BasicLit) {
-	basicLit = &ast.BasicLit{
-		Kind:  kind,
-		Value: value,
-	}
-	return
-}
-
-func createUnaryExpr(operator token.Token, operand ast.Expr) (unaryExpr *ast.UnaryExpr) {
-	unaryExpr = &ast.UnaryExpr{
-		Op: operator,
-		X:  operand,
-	}
-	return
-}
-
-func createCompositeLit(Type ast.Expr, elts ...ast.Expr) (compositeLit *ast.CompositeLit) {
-	compositeLit = &ast.CompositeLit{
-		Type: Type,
-		Elts: elts,
-	}
-	return
-}
-
-func createRangeStmt(key, value string, tok token.Token, rangeName string, stmts ...ast.Stmt) (rangeStmt *ast.RangeStmt) {
-	rangeStmt = &ast.RangeStmt{
-		Key:   createName(key),
-		Value: createName(value),
-		Tok:   tok,
-		X:     createName(rangeName),
-		Body: &ast.BlockStmt{
-			List: stmts,
-		},
+func cutPostfix(text, postfix string) (shortCutText string) {
+	lenPostfix := len(postfix)
+	if len(text) > lenPostfix {
+		startPostfix := len(text) - lenPostfix
+		packageNamePostfix := text[startPostfix:]
+		if packageNamePostfix == postfix {
+			shortCutText = text[0:startPostfix]
+		}
 	}
 	return
 }

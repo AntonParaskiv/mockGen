@@ -1,29 +1,30 @@
-package main
+package old
 
 import (
+	"github.com/AntonParaskiv/mockGen/main"
 	"go/ast"
 	"go/token"
 )
 
 func createSetterName(fieldName string) (setterName string) {
-	setterName = "Set" + toPublic(fieldName)
+	setterName = "Set" + main.toPublic(fieldName)
 	return
 }
 
 func createSettersAndTests(structSpec *ast.TypeSpec) (setterDecls, setterTestsDecls []*ast.FuncDecl) {
-	structName := getNodeName(structSpec)
-	receiverName := getReceiverName(structName)
+	structName := main.getNodeName(structSpec)
+	receiverName := main.getReceiverName(structName)
 
 	fieldList := structSpec.Type.(*ast.StructType).Fields.List
-	pointerStruct := createPointerStruct(structName)
-	namedPointerStruct := createFieldNamedPointerStruct(structName, receiverName)
+	pointerStruct := main.createPointerStruct(structName)
+	namedPointerStruct := main.createFieldNamedPointerStruct(structName, receiverName)
 
 	setterDecls = make([]*ast.FuncDecl, 0)
 	setterTestsDecls = make([]*ast.FuncDecl, 0)
 
 	for _, field := range fieldList {
 		// create setter
-		functionName := createSetterName(getNodeName(field))
+		functionName := createSetterName(main.getNodeName(field))
 		setter := createSetter(field, namedPointerStruct, pointerStruct, functionName, receiverName)
 		setterDecls = append(setterDecls, setter)
 
@@ -37,7 +38,7 @@ func createSettersAndTests(structSpec *ast.TypeSpec) (setterDecls, setterTestsDe
 }
 
 func createSetter(field, namedPointerStruct *ast.Field, pointerStruct *ast.StarExpr, functionName, receiverName string) (setterDecl *ast.FuncDecl) {
-	name := createName(functionName)
+	name := main.createName(functionName)
 	args := createFieldList(field)
 	results := createFieldList(createFieldFromExpr(pointerStruct))
 	recvs := createFieldList(namedPointerStruct)
@@ -45,15 +46,15 @@ func createSetter(field, namedPointerStruct *ast.Field, pointerStruct *ast.StarE
 	// s.Field = Field
 	lineSFieldAssignField := createAssignStmt(
 		// s.Field
-		createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(field)))),
+		main.createExprList(main.createSelectorExpr(main.createName(receiverName), main.createName(main.getNodeName(field)))),
 		// =
 		token.ASSIGN,
 		// Field
-		createExprList(createName(getNodeName(field))),
+		main.createExprList(main.createName(main.getNodeName(field))),
 	)
 
 	// return s
-	lineReturnS := createReturnStmt(createName(receiverName))
+	lineReturnS := createReturnStmt(main.createName(receiverName))
 
 	setterDecl = createFuncDecl(recvs, name, args, results,
 		lineSFieldAssignField,

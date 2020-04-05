@@ -1,6 +1,7 @@
-package main
+package old
 
 import (
+	"github.com/AntonParaskiv/mockGen/main"
 	"go/ast"
 	"go/token"
 )
@@ -40,62 +41,62 @@ var testFunctionType = &ast.FuncType{
 }
 
 // reflect.DeepEqual
-var reflectDeepEqual = createSelectorExpr(
-	createName("reflect"),
-	createName("DeepEqual"),
+var reflectDeepEqual = main.createSelectorExpr(
+	main.createName("reflect"),
+	main.createName("DeepEqual"),
 )
 
 // t.Run
-var tRun = createSelectorExpr(
-	createName("t"),
-	createName("Run"),
+var tRun = main.createSelectorExpr(
+	main.createName("t"),
+	main.createName("Run"),
 )
 
 // t.Errorf
-var tErrorf = createSelectorExpr(
-	createName("t"),
-	createName("Errorf"),
+var tErrorf = main.createSelectorExpr(
+	main.createName("t"),
+	main.createName("Errorf"),
 )
 
 func createTestName(name string) (testName *ast.KeyValueExpr) {
 	key := "name"
-	value := createBasicLit(name, token.STRING)
-	testName = createKeyValueExpr(key, value)
+	value := main.createBasicLit(name, token.STRING)
+	testName = main.createKeyValueExpr(key, value)
 	return
 }
 
 func generateTestValue(field *ast.Field) (basicLit *ast.BasicLit) {
 	fieldTypeIdent, ok := field.Type.(*ast.Ident)
 	if !ok {
-		basicLit = createBasicLit(`"// TODO: generate value"`, token.STRING)
+		basicLit = main.createBasicLit(`"// TODO: generate value"`, token.STRING)
 		return
 	}
 
-	fieldTypeName := getNodeName(fieldTypeIdent)
+	fieldTypeName := main.getNodeName(fieldTypeIdent)
 
 	if fieldTypeName == "string" {
-		value := "my" + toPublic(getNodeName(field))
-		basicLit = createBasicLit(`"`+value+`"`, token.STRING)
+		value := "my" + main.toPublic(main.getNodeName(field))
+		basicLit = main.createBasicLit(`"`+value+`"`, token.STRING)
 		return
 	}
 
 	if len(fieldTypeName) >= 3 && fieldTypeName[0:3] == "int" {
-		basicLit = createBasicLit("100", token.INT)
+		basicLit = main.createBasicLit("100", token.INT)
 		return
 	}
 
 	if len(fieldTypeName) >= 5 && fieldTypeName[0:5] == "float" {
-		basicLit = createBasicLit("100", token.INT)
+		basicLit = main.createBasicLit("100", token.INT)
 		return
 	}
 
 	// TODO: add other types
-	basicLit = createBasicLit(`"// TODO: generate value"`, token.STRING)
+	basicLit = main.createBasicLit(`"// TODO: generate value"`, token.STRING)
 	return
 }
 
 func createTestTable(fieldList *ast.FieldList, rows []ast.Expr) (testTable *ast.CompositeLit) {
-	testTable = createCompositeLit(
+	testTable = main.createCompositeLit(
 		&ast.ArrayType{
 			Elt: &ast.StructType{
 				Fields: fieldList,
@@ -107,9 +108,9 @@ func createTestTable(fieldList *ast.FieldList, rows []ast.Expr) (testTable *ast.
 }
 
 func createTTSelector(name string) (ttSelector *ast.SelectorExpr) {
-	ttSelector = createSelectorExpr(
-		createName("tt"),
-		createName(name),
+	ttSelector = main.createSelectorExpr(
+		main.createName("tt"),
+		main.createName(name),
 	)
 	return
 }
@@ -119,7 +120,7 @@ func createTestCompareResultErrorf(resultName, wantName string, result, want ast
 	resultError = &ast.ExprStmt{
 		X: createCallExpr(
 			tErrorf,
-			createBasicLit(
+			main.createBasicLit(
 				`"`+resultName+" = %v, "+wantName+" %v"+`"`,
 				token.STRING,
 			),
@@ -131,7 +132,7 @@ func createTestCompareResultErrorf(resultName, wantName string, result, want ast
 }
 
 func createNotDeepEqualExpr(arg1, arg2 ast.Expr) (expr *ast.UnaryExpr) {
-	expr = createUnaryExpr(
+	expr = main.createUnaryExpr(
 		token.NOT,
 		createCallExpr(
 			reflectDeepEqual,
@@ -166,7 +167,7 @@ func createTRunExpr(callBackFunc ast.Expr) (tRunExpr *ast.ExprStmt) {
 }
 
 func createRunRangeStmt(stmts ...ast.Stmt) (runRangeStmt *ast.RangeStmt) {
-	runRangeStmt = createRangeStmt(
+	runRangeStmt = main.createRangeStmt(
 		"_",
 		"tt",
 		token.DEFINE,

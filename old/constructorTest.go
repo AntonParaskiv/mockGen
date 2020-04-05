@@ -1,6 +1,7 @@
-package main
+package old
 
 import (
+	"github.com/AntonParaskiv/mockGen/main"
 	"go/ast"
 	"go/token"
 )
@@ -11,7 +12,7 @@ func createTestNewName(newName string) (newTestName string) {
 }
 
 func createConstructorTest(structName, functionName, testFunctionName, wantReceiver, gotReceiver string, pointerStruct *ast.StarExpr) (constructorTestDecl *ast.FuncDecl) {
-	name := createName(testFunctionName)
+	name := main.createName(testFunctionName)
 	args := createFieldList(namedPointerTestingT)
 	results := createFieldList()
 
@@ -26,11 +27,11 @@ func createConstructorTest(structName, functionName, testFunctionName, wantRecei
 func createConstructorTestTable(structName, wantReceiver string, pointerStruct *ast.StarExpr) (testTable *ast.CompositeLit) {
 	testTableFieldList := createFieldList(
 		// name string
-		createField("name", createName("string")),
+		createField("name", main.createName("string")),
 		// wantS *Mock
 		createField(wantReceiver, pointerStruct),
 	)
-	testTableRows := createExprList(
+	testTableRows := main.createExprList(
 		// Mock init
 		createTestRowInitStruct(wantReceiver, structName),
 	)
@@ -39,11 +40,11 @@ func createConstructorTestTable(structName, wantReceiver string, pointerStruct *
 }
 
 func createTestRowInitStruct(wantReceiver, structName string) (testRow *ast.CompositeLit) {
-	testRow = createCompositeLit(nil,
+	testRow = main.createCompositeLit(nil,
 		createTestName(`"Mock init"`),
-		createKeyValueExpr(
+		main.createKeyValueExpr(
 			wantReceiver,
-			initStructLiteral(structName),
+			main.initStructLiteral(structName),
 		),
 	)
 	return
@@ -55,11 +56,11 @@ func createConstructorStmtTestsDeclare(structName, wantReceiver string, pointerS
 	// test := []struct{...}{...}
 	stmtTestsDeclare = createAssignStmt(
 		// tests
-		createExprList(createName("tests")),
+		main.createExprList(main.createName("tests")),
 		// :=
 		token.DEFINE,
 		// []struct{...}{...}
-		createExprList(testTable),
+		main.createExprList(testTable),
 	)
 
 	return
@@ -68,18 +69,18 @@ func createConstructorStmtTestsDeclare(structName, wantReceiver string, pointerS
 func createConstructorStmtTestsRun(functionName, wantReceiver, gotReceiver string) (runRangeStmt *ast.RangeStmt) {
 	ttWantReceiver := createTTSelector(wantReceiver)
 	compareResultInit := createAssignStmt(
-		createExprList(createName(gotReceiver)),
+		main.createExprList(main.createName(gotReceiver)),
 		token.DEFINE,
-		createExprList(createCallExpr(createName(functionName))),
+		main.createExprList(createCallExpr(main.createName(functionName))),
 	)
 	compareResultCondition := createNotDeepEqualExpr(
-		createName(gotReceiver),
+		main.createName(gotReceiver),
 		ttWantReceiver,
 	)
 	compareResultErrorf := createTestCompareResultErrorf(
 		functionName+"()",
 		wantReceiver,
-		createName(gotReceiver),
+		main.createName(gotReceiver),
 		ttWantReceiver,
 	)
 	compareIfBlock := createIfStmt(

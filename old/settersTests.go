@@ -1,6 +1,7 @@
-package main
+package old
 
 import (
+	"github.com/AntonParaskiv/mockGen/main"
 	"go/ast"
 	"go/token"
 )
@@ -11,13 +12,13 @@ func createTestSetterName(structName, setterFunctionName string) (setterTestName
 }
 
 func createSetterTest(field *ast.Field, pointerStruct *ast.StarExpr, structName, receiverName, functionName, testFunctionName string) (setterTestDecl *ast.FuncDecl) {
-	name := createName(testFunctionName)
+	name := main.createName(testFunctionName)
 	args := createFieldList(namedPointerTestingT)
 
 	setterTestDecl = createFuncDecl(nil, name, args, nil,
-		createDeclStruct("args", field),
+		main.createDeclStruct("args", field),
 		createSetterStmtTestsDeclare(structName, "want", field, pointerStruct),
-		createSetterStmtTestsRun(functionName, receiverName, "want", "got", structName, getNodeName(field)),
+		createSetterStmtTestsRun(functionName, receiverName, "want", "got", structName, main.getNodeName(field)),
 		returnStmt,
 	)
 
@@ -30,11 +31,11 @@ func createSetterStmtTestsDeclare(structName, wantReceiver string, field *ast.Fi
 	// test := []struct{...}{...}
 	stmtTestsDeclare = createAssignStmt(
 		// tests
-		createExprList(createName("tests")),
+		main.createExprList(main.createName("tests")),
 		// :=
 		token.DEFINE,
 		// []struct{...}{...}
-		createExprList(testTable),
+		main.createExprList(testTable),
 	)
 
 	return
@@ -43,13 +44,13 @@ func createSetterStmtTestsDeclare(structName, wantReceiver string, field *ast.Fi
 func createSetterTestTable(structName, wantReceiver string, field *ast.Field, pointerStruct *ast.StarExpr) (testTable *ast.CompositeLit) {
 	testTableFieldList := createFieldList(
 		// name string
-		createField("name", createName("string")),
+		createField("name", main.createName("string")),
 		// args string
-		createField("args", createName("args")),
+		createField("args", main.createName("args")),
 		// wantS *Mock
 		createField(wantReceiver, pointerStruct),
 	)
-	testTableRows := createExprList(
+	testTableRows := main.createExprList(
 		// Mock init
 		createTestRowSetting(wantReceiver, structName, field),
 	)
@@ -60,23 +61,23 @@ func createSetterTestTable(structName, wantReceiver string, field *ast.Field, po
 func createTestRowSetting(wantReceiver, structName string, field *ast.Field) (testRow *ast.CompositeLit) {
 
 	// Field: "myField"
-	fieldKeyValue := createKeyValueExpr(
-		getNodeName(field),
+	fieldKeyValue := main.createKeyValueExpr(
+		main.getNodeName(field),
 		generateTestValue(field),
 	)
 
-	testRow = createCompositeLit(nil,
+	testRow = main.createCompositeLit(nil,
 		createTestName(`"Setting"`),
-		createKeyValueExpr(
+		main.createKeyValueExpr(
 			"args",
-			createCompositeLit(
-				createName("args"),
+			main.createCompositeLit(
+				main.createName("args"),
 				fieldKeyValue,
 			),
 		),
-		createKeyValueExpr(
+		main.createKeyValueExpr(
 			wantReceiver,
-			initStructLiteral(structName, fieldKeyValue),
+			main.initStructLiteral(structName, fieldKeyValue),
 		),
 	)
 	return
@@ -85,38 +86,38 @@ func createTestRowSetting(wantReceiver, structName string, field *ast.Field) (te
 func createSetterStmtTestsRun(functionName, receiverName, wantReceiver, gotReceiver, structName, fieldName string) (runRangeStmt *ast.RangeStmt) {
 	ttWantReceiver := createTTSelector(wantReceiver)
 	compareResultInit := createAssignStmt(
-		createExprList(createName(gotReceiver)),
+		main.createExprList(main.createName(gotReceiver)),
 		token.DEFINE,
-		createExprList(createCallExpr(
-			createSelectorExpr(createName(receiverName), createName(functionName)),
-			createSelectorExpr(
-				createSelectorExpr(
-					createName("tt"),
-					createName("args"),
+		main.createExprList(createCallExpr(
+			main.createSelectorExpr(main.createName(receiverName), main.createName(functionName)),
+			main.createSelectorExpr(
+				main.createSelectorExpr(
+					main.createName("tt"),
+					main.createName("args"),
 				),
-				createName(fieldName),
+				main.createName(fieldName),
 			),
 		)),
 	)
 	compareResultCondition := createNotDeepEqualExpr(
-		createName(gotReceiver),
+		main.createName(gotReceiver),
 		ttWantReceiver,
 	)
 	compareResultErrorf := createTestCompareResultErrorf(
 		functionName+"()",
 		wantReceiver,
-		createName(gotReceiver),
+		main.createName(gotReceiver),
 		ttWantReceiver,
 	)
 
 	// s := &Mock{}
 	lineSDefineStructLiteral := createAssignStmt(
 		// s
-		createExprList(createName(receiverName)),
+		main.createExprList(main.createName(receiverName)),
 		// :=
 		token.DEFINE,
 		// &Mock{}
-		createExprList(initStructLiteral(structName)),
+		main.createExprList(main.initStructLiteral(structName)),
 	)
 
 	compareIfBlock := createIfStmt(

@@ -130,30 +130,13 @@ func createFieldFromAstField(astField *ast.Field) (field *Field, err error) {
 	}
 	field.Type = fieldType
 
-	//switch astType := astField.Type.(type) {
-	//case *ast.Ident:
-	//	field.Type = astType.Name
-	//case *ast.InterfaceType:
-	//	if len(astType.Methods.List) > 0 {
-	//		err = fmt.Errorf("unsupported type interface{} %s with methods", field.Name)
-	//		return
-	//	}
-	//	field.Type = "interface{}"
-	//case *ast.ArrayType:
-	//	fmt.Println(astType.Elt)
-	//
-	//default:
-	//	err = fmt.Errorf("unsupported type of %s", field.Name)
-	//	return
-	//}
-
 	return
 }
 
 func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err error) {
 	switch astType := astFieldType.(type) {
 	case *ast.Ident:
-		fieldType = astType.Name
+		fieldType = getNodeName(astType)
 	case *ast.InterfaceType:
 		if len(astType.Methods.List) > 0 {
 			err = fmt.Errorf("unsupported type interface{} with methods")
@@ -168,6 +151,19 @@ func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err 
 			return
 		}
 		fieldType = fmt.Sprintf("[]%s", itemType)
+	case *ast.MapType:
+		var keyType, valueType string
+		keyType, err = getFieldTypeFromAstFieldType(astType.Key)
+		if err != nil {
+			err = fmt.Errorf("get map key type failed: %w", err)
+			return
+		}
+		valueType, err = getFieldTypeFromAstFieldType(astType.Value)
+		if err != nil {
+			err = fmt.Errorf("get map value type failed: %w", err)
+			return
+		}
+		fieldType = fmt.Sprintf("map[%s]%s", keyType, valueType)
 	case *ast.StructType:
 		fieldType = fmt.Sprintf("struct {\n")
 		for _, item := range astType.Fields.List {
@@ -180,9 +176,21 @@ func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err 
 			fieldType += fmt.Sprintf("	%s %s\n", getNodeName(item), itemType)
 		}
 		fieldType += fmt.Sprintf("}")
+	// custom types // TODO: handle imports
+	case *ast.SelectorExpr:
+		fieldType = fmt.Sprintf("%s.%s", getNodeName(astType.X), getNodeName(astType.Sel))
+	case *ast.StarExpr:
+		var baseFieldType string
+		baseFieldType, err = getFieldTypeFromAstFieldType(astType.X)
+		if err != nil {
+			err = fmt.Errorf("get base field type failed: %w", err)
+			return
+		}
+		fieldType = fmt.Sprintf("*%s", baseFieldType)
 	default:
 		err = fmt.Errorf("unsupported type")
 		return
 	}
+
 	return
 }

@@ -1,20 +1,21 @@
-package main
+package old
 
 import (
+	"github.com/AntonParaskiv/mockGen/main"
 	"go/ast"
 	"go/token"
 )
 
 func createMethodsAndTests(structSpec *ast.TypeSpec, interfaceSpec *ast.TypeSpec) (methodDecls, methodTestDecls []*ast.FuncDecl) {
-	structName := getNodeName(structSpec)
-	receiverName := getReceiverName(structName)
-	pointerStruct := createPointerStruct(structName)
-	namedPointerStruct := createFieldNamedPointerStruct(structName, receiverName)
+	structName := main.getNodeName(structSpec)
+	receiverName := main.getReceiverName(structName)
+	pointerStruct := main.createPointerStruct(structName)
+	namedPointerStruct := main.createFieldNamedPointerStruct(structName, receiverName)
 
 	methodDecls = make([]*ast.FuncDecl, 0)
 	methodTestDecls = make([]*ast.FuncDecl, 0)
 	for _, interfaceMethod := range interfaceSpec.Type.(*ast.InterfaceType).Methods.List {
-		methodName := getNodeName(interfaceMethod)
+		methodName := main.getNodeName(interfaceMethod)
 		paramList := interfaceMethod.Type.(*ast.FuncType).Params.List
 		resultList := interfaceMethod.Type.(*ast.FuncType).Results.List
 
@@ -31,7 +32,7 @@ func createMethodsAndTests(structSpec *ast.TypeSpec, interfaceSpec *ast.TypeSpec
 }
 
 func createMethod(paramList, resultList []*ast.Field, methodName, receiverName string, namedPointerStruct *ast.Field) (method *ast.FuncDecl) {
-	name := createName(methodName)
+	name := main.createName(methodName)
 	args := createFieldList(paramList...)
 	results := createFieldList(resultList...)
 	recvs := createFieldList(namedPointerStruct)
@@ -42,11 +43,11 @@ func createMethod(paramList, resultList []*ast.Field, methodName, receiverName s
 		// s.Field = Field
 		lineSFieldAssignField := createAssignStmt(
 			// s.Field
-			createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(param)))),
+			main.createExprList(main.createSelectorExpr(main.createName(receiverName), main.createName(main.getNodeName(param)))),
 			// =
 			token.ASSIGN,
 			// Field
-			createExprList(createName(getNodeName(param))),
+			main.createExprList(main.createName(main.getNodeName(param))),
 		)
 		bodyList = append(bodyList, lineSFieldAssignField)
 	}
@@ -54,11 +55,11 @@ func createMethod(paramList, resultList []*ast.Field, methodName, receiverName s
 		// Field = s.Field
 		lineFieldAssignSField := createAssignStmt(
 			// Field
-			createExprList(createName(getNodeName(result))),
+			main.createExprList(main.createName(main.getNodeName(result))),
 			// =
 			token.ASSIGN,
 			// s.Field
-			createExprList(createSelectorExpr(createName(receiverName), createName(getNodeName(result)))),
+			main.createExprList(main.createSelectorExpr(main.createName(receiverName), main.createName(main.getNodeName(result)))),
 		)
 		bodyList = append(bodyList, lineFieldAssignSField)
 	}
