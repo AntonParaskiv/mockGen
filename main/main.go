@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/AntonParaskiv/mockGen/domain"
 	"github.com/AntonParaskiv/mockGen/interfaces/AstRepository"
+	"github.com/AntonParaskiv/mockGen/interfaces/Printer"
 	"github.com/AntonParaskiv/mockGen/usecases"
 	"io/ioutil"
 	"os"
@@ -15,6 +16,7 @@ func main() {
 
 	astRepository := AstRepository.Repository{}
 	interactor := usecases.Interactor{}
+	printer := Printer.Printer{}
 
 	interfacePackage, err := astRepository.CreateInterfacePackage(interfacePackagePath)
 	if err != nil {
@@ -22,6 +24,7 @@ func main() {
 	}
 
 	mockPackage := interactor.CreateMockPackage(interfacePackage)
+	printer.GenerateCode(mockPackage)
 
 	err = SaveGoPackage(mockPackage)
 	if err != nil {
