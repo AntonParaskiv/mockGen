@@ -131,7 +131,7 @@ func createFieldFromAstField(astField *ast.Field) (field *domain.Field, err erro
 	return
 }
 
-func getFieldTypeFromAstFieldType(astFieldType ast.Expr) (fieldType string, err error) {
+func getFieldTypeFromAstFieldType(astFieldType ast.Node) (fieldType string, err error) {
 	switch astType := astFieldType.(type) {
 	case *ast.Ident:
 		fieldType = getNodeName(astType)
@@ -265,7 +265,7 @@ func getNodeName(node ast.Node) (name string) {
 	return
 }
 
-func (r *Repository) GetTypeDeclarationFromPackage(packagePath, typeName string) (typeSpec *ast.TypeSpec) {
+func (r *Repository) getTypeDeclarationFromPackage(packagePath, typeName string) (typeSpec *ast.TypeSpec) {
 	fullPackagePath := filepath.Join(os.Getenv("GOPATH"), "src", packagePath)
 	astPackage, err := r.CodeStorage.GetAstPackage(fullPackagePath)
 	if err != nil {
@@ -288,6 +288,23 @@ func (r *Repository) GetTypeDeclarationFromPackage(packagePath, typeName string)
 			}
 		}
 	}
+
+	return
+}
+
+func (r *Repository) GetTypeFieldFromPackage(packagePath, typeName string) (field *domain.Field, err error) {
+	typeSpec := r.getTypeDeclarationFromPackage(packagePath, typeName)
+
+	field = &domain.Field{
+		Name: getNodeName(typeSpec),
+	}
+
+	fieldType, err := getFieldTypeFromAstFieldType(typeSpec.Type)
+	if err != nil {
+		err = fmt.Errorf("get field %s type from ast field type failed: %w", field.Name, err)
+		return
+	}
+	field.Type = fieldType
 
 	return
 }

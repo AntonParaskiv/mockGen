@@ -17,12 +17,9 @@ func main() {
 	astRepository := AstRepository.Repository{
 		CodeStorage: codeStorage,
 	}
-
-	//spec := astRepository.GetTypeDeclarationFromPackage("github.com/AntonParaskiv/mockGen/examples", "Password")
-	//_ = spec
-	//return
-
-	interactor := usecases.Interactor{}
+	interactor := usecases.Interactor{
+		AstRepository: astRepository,
+	}
 	printer := Printer.Printer{}
 
 	astPackage, err := codeStorage.GetAstPackage(interfacePackagePath)
