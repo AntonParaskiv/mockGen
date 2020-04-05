@@ -18,9 +18,9 @@ func (p *Printer) GenerateCode(mockPackage *domain.GoCodePackage) {
 
 		mockTestFile := &domain.GoCodeFile{
 			Name: createTestFilePath(mockFile.Name),
-			ImportList: []string{
-				"reflect",
-				"testing",
+			ImportList: []*domain.Import{
+				{Key: "reflect", Path: "reflect"},
+				{Key: "testing", Path: "testing"},
 			},
 		}
 
@@ -305,15 +305,15 @@ func genCodeTestMethod(mock *domain.Mock, method *domain.Method) {
 	return
 }
 
-func createImportList(importList []string) (code string) {
+func createImportList(importList []*domain.Import) (code string) {
 	switch len(importList) {
 	case 0:
 	case 1:
-		code = fmt.Sprintf("import \"%s\"\n\n", importList[0])
+		code = fmt.Sprintf("import %s \"%s\"\n\n", importList[0].Name, importList[0].Path)
 	default:
 		code = fmt.Sprintf("import (\n")
 		for _, Import := range importList {
-			code += fmt.Sprintf("	\"%s\"\n", Import)
+			code += fmt.Sprintf("	%s \"%s\"\n", Import.Name, Import.Path)
 		}
 		code += fmt.Sprintf(")\n\n")
 	}

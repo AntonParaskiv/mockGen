@@ -11,10 +11,11 @@ type GoCodeFile struct {
 	InterfaceList []*Interface
 	MockList      []*Mock
 	Code          string
-	ImportList    []string
+	ImportList    []*Import
 }
 
 type Import struct {
+	Key  string
 	Name string
 	Path string
 }
@@ -22,7 +23,7 @@ type Import struct {
 type Interface struct {
 	Name       string
 	MethodList []*Method
-	ImportList []string
+	ImportList []*Import
 }
 
 type Mock struct {
@@ -30,8 +31,8 @@ type Mock struct {
 	Constructor    *Constructor
 	SetterList     []*Setter
 	MethodList     []*Method
-	CodeImportList []string
-	TestImportList []string
+	CodeImportList []*Import
+	TestImportList []*Import
 }
 
 type Struct struct {
@@ -41,15 +42,15 @@ type Struct struct {
 	GotName      string
 	FieldList    []*Field
 	Code         string
-	ImportList   []string
+	ImportList   []*Import
 }
 
 type Constructor struct {
 	Name           string
 	Code           string
 	CodeTest       string
-	CodeImportList []string
-	TestImportList []string
+	CodeImportList []*Import
+	TestImportList []*Import
 }
 
 type Setter struct {
@@ -57,8 +58,8 @@ type Setter struct {
 	Field          *Field
 	Code           string
 	CodeTest       string
-	CodeImportList []string
-	TestImportList []string
+	CodeImportList []*Import
+	TestImportList []*Import
 }
 
 type Method struct {
@@ -69,8 +70,8 @@ type Method struct {
 	ResultNameTypeList []string
 	Code               string
 	CodeTest           string
-	CodeImportList     []string
-	TestImportList     []string
+	CodeImportList     []*Import
+	TestImportList     []*Import
 }
 
 type Field struct {
@@ -81,6 +82,6 @@ type Field struct {
 	BaseType       *Field
 	NameType       string
 	ExampleValue   string
-	CodeImportList []string
-	TestImportList []string
+	CodeImportList []*Import
+	TestImportList []*Import
 }

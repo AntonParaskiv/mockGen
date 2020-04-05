@@ -29,7 +29,7 @@ func (i *Interactor) CreateMockPackage(interfacePackage *domain.GoCodePackage) (
 func createMockFilesFromInterfaceFile(interfaceFile *domain.GoCodeFile, mockPackageName string) (mockFile *domain.GoCodeFile) {
 	mockFile = &domain.GoCodeFile{
 		Name:       interfaceFile.Name,
-		ImportList: append([]string{}, interfaceFile.ImportList...),
+		ImportList: append([]*domain.Import{}, interfaceFile.ImportList...),
 	}
 
 	for _, iFace := range interfaceFile.InterfaceList {
@@ -124,7 +124,7 @@ ResultLoop:
 	return
 }
 
-func createExampleValue(fieldType string, fieldName string) (exampleValue string, importList []string) {
+func createExampleValue(fieldType string, fieldName string) (exampleValue string, importList []*domain.Import) {
 	switch {
 	case fieldType == "string":
 		exampleValue = `"my` + toPublic(fieldName) + `"`
@@ -144,7 +144,7 @@ func createExampleValue(fieldType string, fieldName string) (exampleValue string
 		exampleValue = "50"
 	case fieldType == "error":
 		exampleValue = `fmt.Errorf("simulated error")`
-		importList = append(importList, "fmt")
+		importList = append(importList, &domain.Import{Key: "fmt", Path: "fmt"})
 	case len(fieldType) >= 2 && fieldType[0:2] == "[]":
 		itemType := fieldType[2:]
 		itemExampleValue, itemImportList := createExampleValue(itemType, itemType+"Example")

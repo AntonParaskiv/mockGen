@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Repository struct {
@@ -27,7 +28,7 @@ func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath
 
 		interfaceFile := &domain.GoCodeFile{
 			Name:       filepath.Base(fullFileName),
-			ImportList: nil, // TODO: fill
+			ImportList: getImportListFromAstFile(astFile),
 		}
 
 		astInterfaceSpecs := getInterfaces(astFile)
@@ -52,6 +53,22 @@ func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath
 		interfacePackage.FileList = append(interfacePackage.FileList, interfaceFile)
 	}
 
+	return
+}
+
+func getImportListFromAstFile(astFile *ast.File) (importList []*domain.Import) {
+	for _, spec := range astFile.Imports {
+		Import := &domain.Import{
+			Name: getNodeName(spec),
+			Path: strings.Trim(spec.Path.Value, `"`),
+		}
+		if Import.Name != "" {
+			Import.Key = Import.Name
+		} else {
+			Import.Key = filepath.Base(Import.Path)
+		}
+		importList = append(importList, Import)
+	}
 	return
 }
 
@@ -238,6 +255,10 @@ func getNodeName(node ast.Node) (name string) {
 		name = nodeItem.Names[0].Name
 	case *ast.Ident:
 		name = nodeItem.Name
+	case *ast.ImportSpec:
+		if nodeItem.Name != nil {
+			name = nodeItem.Name.Name
+		}
 	default:
 		panic(fmt.Sprintf("no getting name case for type %T", node))
 	}
