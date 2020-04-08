@@ -16,9 +16,31 @@ type Repository struct {
 }
 
 func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath string) (interfacePackage *domain.GoCodePackage, err error) {
+	fullPackagePath, err := filepath.Abs(packagePath)
+	if err != nil {
+		err = fmt.Errorf("create full package path failed: %w", err)
+		return
+	}
+
+	goPathSrc := filepath.Join(os.Getenv("GOPATH"), "src")
+
+	goPathSrcPackagePath, err := filepath.Rel(goPathSrc, fullPackagePath)
+	if err != nil {
+		err = fmt.Errorf("create GOPATH/src package path failed: %w", err)
+		return
+	}
+
+	selfImport := &domain.Import{
+		Key:  filepath.Base(goPathSrcPackagePath),
+		Name: "",
+		Path: filepath.ToSlash(goPathSrcPackagePath),
+	}
+
 	interfacePackage = &domain.GoCodePackage{
 		Path:        packagePath,
+		FullPath:    fullPackagePath,
 		PackageName: astPackage.Name,
+		SelfImport:  selfImport,
 	}
 
 	for fullFileName, astFile := range astPackage.Files {
@@ -266,8 +288,12 @@ func getNodeName(node ast.Node) (name string) {
 }
 
 func (r *Repository) getTypeDeclarationFromPackage(packagePath, typeName string) (typeSpec *ast.TypeSpec) {
-	fullPackagePath := filepath.Join(os.Getenv("GOPATH"), "src", packagePath)
-	astPackage, err := r.CodeStorage.GetAstPackage(fullPackagePath)
+	goPathSrc := filepath.Join(os.Getenv("GOPATH"), "src")
+	if len(packagePath) < len(goPathSrc) || packagePath[:len(goPathSrc)] != goPathSrc {
+		packagePath = filepath.Join(goPathSrc, packagePath)
+	}
+
+	astPackage, err := r.CodeStorage.GetAstPackage(packagePath)
 	if err != nil {
 		err = fmt.Errorf("get ast package %s failed: %w", packagePath, err)
 		return

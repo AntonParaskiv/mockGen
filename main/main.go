@@ -12,7 +12,7 @@ func main() {
 	interfacePackagePath := "examples/ManagerInterface"
 
 	codeStorage := CodeStorage.Storage{
-		FormatEnabled: false,
+		FormatEnabled: true,
 	}
 	astRepository := AstRepository.Repository{
 		CodeStorage: codeStorage,

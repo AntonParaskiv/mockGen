@@ -1,19 +1,5 @@
 package domain
 
-type GoCodePackage struct {
-	Path        string
-	PackageName string
-	FileList    []*GoCodeFile
-}
-
-type GoCodeFile struct {
-	Name          string
-	InterfaceList []*Interface
-	MockList      []*Mock
-	Code          string
-	ImportList    []*Import
-}
-
 type Import struct {
 	Key  string
 	Name string
@@ -72,16 +58,4 @@ type Method struct {
 	CodeTest           string
 	CodeImportList     []*Import
 	TestImportList     []*Import
-}
-
-type Field struct {
-	Name           string
-	WantName       string
-	GotName        string
-	Type           string
-	BaseType       *Field
-	NameType       string
-	ExampleValue   string
-	CodeImportList []*Import
-	TestImportList []*Import
 }

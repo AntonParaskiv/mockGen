@@ -8,11 +8,15 @@ import (
 )
 
 type Interactor struct {
-	AstRepository AstRepository.Repository
-	mockFile      *domain.GoCodeFile
+	AstRepository    AstRepository.Repository
+	mockFile         *domain.GoCodeFile
+	interfacePackage *domain.GoCodePackage
+	mockPackage      *domain.GoCodePackage
 }
 
 func (i *Interactor) CreateMockPackage(interfacePackage *domain.GoCodePackage) (mockPackage *domain.GoCodePackage) {
+	i.interfacePackage = interfacePackage
+
 	mockPackagePath := cutPostfix(interfacePackage.Path, "Interface") + "Mock"
 	mockPackageName := cutPostfix(interfacePackage.PackageName, "Interface") + "Mock"
 
@@ -20,6 +24,8 @@ func (i *Interactor) CreateMockPackage(interfacePackage *domain.GoCodePackage) (
 		Path:        mockPackagePath,
 		PackageName: mockPackageName,
 	}
+
+	i.mockPackage = mockPackage
 
 	for _, interfaceFile := range interfacePackage.FileList {
 		mockFile := i.createMockFilesFromInterfaceFile(interfaceFile, mockPackageName)
@@ -41,6 +47,58 @@ func (i *Interactor) createMockFilesFromInterfaceFile(interfaceFile *domain.GoCo
 	}
 
 	return i.mockFile
+}
+
+func (i *Interactor) createMockMethodList(iFaceMethodList []*domain.Method) (mockMethodList []*domain.Method) {
+	for _, iFaceMethod := range iFaceMethodList {
+		mockMethod := &domain.Method{
+			Name:               iFaceMethod.Name,
+			ResultNameTypeList: nil,
+		}
+
+		for _, iFaceArg := range iFaceMethod.ArgList {
+			mockArg := &domain.Field{
+				Name:     iFaceArg.Name,
+				WantName: iFaceArg.WantName,
+				GotName:  iFaceArg.GotName,
+				Type:     iFaceArg.Type,
+				BaseType: iFaceArg.BaseType,
+				NameType: iFaceArg.NameType,
+			}
+			mockMethod.ArgList = append(mockMethod.ArgList, mockArg)
+		}
+
+		for _, iFaceResult := range iFaceMethod.ResultList {
+			mockResult := &domain.Field{
+				Name:     iFaceResult.Name,
+				WantName: iFaceResult.WantName,
+				GotName:  iFaceResult.GotName,
+				Type:     iFaceResult.Type,
+				BaseType: iFaceResult.BaseType,
+				NameType: iFaceResult.NameType,
+			}
+
+			if mockResult.GetTypeType() == domain.FieldTypeLocalCustomType {
+				mockResult.Type = fmt.Sprintf("%s.%s", i.interfacePackage.SelfImport.Key, mockResult.Type)
+				mockResult.CodeImportList = append(mockResult.CodeImportList, i.interfacePackage.SelfImport)
+				//mockResult.TestImportList = append(mockResult.TestImportList, i.interfacePackage.SelfImport)
+			}
+
+			mockMethod.ResultList = append(mockMethod.ResultList, mockResult)
+		}
+
+		for _, iFaceArgNameType := range iFaceMethod.ArgNameTypeList {
+			mockMethod.ArgNameTypeList = append(mockMethod.ArgNameTypeList, iFaceArgNameType)
+		}
+
+		for _, iFaceResultNameType := range iFaceMethod.ResultNameTypeList {
+			mockMethod.ResultNameTypeList = append(mockMethod.ResultNameTypeList, iFaceResultNameType)
+		}
+
+		mockMethodList = append(mockMethodList, mockMethod)
+	}
+
+	return
 }
 
 func (i *Interactor) createMockFromInterface(iFace *domain.Interface, mockPackageName string) (mock *domain.Mock) {
@@ -65,7 +123,7 @@ func (i *Interactor) createMockFromInterface(iFace *domain.Interface, mockPackag
 		Constructor: &domain.Constructor{
 			Name: constructorName,
 		},
-		MethodList: iFace.MethodList,
+		MethodList: i.createMockMethodList(iFace.MethodList),
 	}
 
 	argList := []*domain.Field{}
@@ -128,34 +186,32 @@ ResultLoop:
 }
 
 func (i *Interactor) createExampleValue(field *domain.Field) (exampleValue string, importList []*domain.Import) {
-	switch {
-	case field.Type == "string":
+	switch field.GetTypeType() {
+	case domain.FieldTypeString:
 		exampleValue = `"my` + toPublic(field.Name) + `"`
-	case field.Type == "interface{}":
+	case domain.FieldTypeInterface:
 		exampleValue = `"my` + toPublic(field.Name) + `"`
-	case len(field.Type) >= 3 && field.Type[0:3] == "int": // int must be after interface !
+	case domain.FieldTypeInts:
 		exampleValue = "100"
-	case len(field.Type) >= 4 && field.Type[0:4] == "uint":
-		exampleValue = "200"
-	case len(field.Type) >= 5 && field.Type[0:5] == "float":
+	case domain.FieldTypeFloat:
 		exampleValue = "3.14"
-	case field.Type == "bool":
+	case domain.FieldTypeBool:
 		exampleValue = "true"
-	case field.Type == "rune":
+	case domain.FieldTypeRune:
 		exampleValue = "'X'"
-	case field.Type == "byte":
+	case domain.FieldTypeByte:
 		exampleValue = "50"
-	case field.Type == "error":
+	case domain.FieldTypeError:
 		exampleValue = `fmt.Errorf("simulated error")`
 		importList = append(importList, &domain.Import{Key: "fmt", Path: "fmt"})
-	case len(field.Type) >= 2 && field.Type[0:2] == "[]":
+	case domain.FieldTypeArray:
 		itemType := field.Type[2:]
 		itemExampleValue, itemImportList := i.createExampleValue(&domain.Field{Type: itemType, Name: itemType + "Example"})
 		exampleValue = fmt.Sprintf("%s{\n", field.Type)
 		exampleValue += fmt.Sprintf("	%s,\n", itemExampleValue)
 		exampleValue += fmt.Sprintf("}")
 		importList = append(importList, itemImportList...)
-	case len(field.Type) >= 4 && field.Type[0:4] == "map[":
+	case domain.FieldTypeMap:
 		keyType, valueType := getMapKeyValueTypes(field.Type)
 		keyExampleValue, keyImportList := i.createExampleValue(&domain.Field{Type: keyType, Name: keyType + "Example"})
 		valueExampleValue, valueImportList := i.createExampleValue(&domain.Field{Type: valueType, Name: valueType + "Example"})
@@ -167,37 +223,61 @@ func (i *Interactor) createExampleValue(field *domain.Field) (exampleValue strin
 		importList = append(importList, keyImportList...)
 		importList = append(importList, valueImportList...)
 
-	default:
-		// custom imported type
-		splitted := strings.Split(field.Type, ".")
-		if len(splitted) == 2 {
-			importKey := splitted[0]
-			typeName := splitted[1]
-			packagePath := ""
+	case domain.FieldTypeImportedCustomType:
 
-			for _, Import := range i.mockFile.ImportList {
-				if Import.Key == importKey {
-					packagePath = Import.Path
-				}
-			}
-
-			baseType, err := i.AstRepository.GetTypeFieldFromPackage(packagePath, typeName)
-			if err != nil {
-				err = fmt.Errorf("get base type of %s failed: %w", field.Type, err)
-				fmt.Printf(err.Error())
+		// check self import
+		for _, Import := range field.CodeImportList {
+			if Import == i.interfacePackage.SelfImport {
+				mock := i.mockPackage.GetMockByName(field.GetTypeName())
+				_ = mock
+				importList = append(importList, field.CodeImportList...)
 				return
 			}
+		}
 
-			baseExampleValue, baseImportList := i.createExampleValue(baseType)
-			baseType.ExampleValue = baseExampleValue
-			baseType.TestImportList = baseImportList
-			field.BaseType = baseType
-
-			exampleValue = fmt.Sprintf("%s(%s)", field.Type, field.BaseType.ExampleValue)
-			importList = append(importList, baseType.TestImportList...)
-
+		splitted := strings.Split(field.Type, ".")
+		if len(splitted) != 2 {
+			err := fmt.Errorf("parse imported custom type failed: %s", field.Type)
+			fmt.Println(err)
 			return
 		}
+
+		importKey := splitted[0]
+		typeName := splitted[1]
+		packagePath := ""
+
+		for _, Import := range i.mockFile.ImportList {
+			if Import.Key == importKey {
+				packagePath = Import.Path
+				importList = append(importList, Import)
+			}
+		}
+
+		baseType, err := i.AstRepository.GetTypeFieldFromPackage(packagePath, typeName)
+		if err != nil {
+			err = fmt.Errorf("get base type of %s failed: %w", field.Type, err)
+			fmt.Printf(err.Error())
+			return
+		}
+
+		baseExampleValue, baseImportList := i.createExampleValue(baseType)
+		baseType.ExampleValue = baseExampleValue
+		baseType.TestImportList = baseImportList
+		field.BaseType = baseType
+
+		exampleValue = fmt.Sprintf("%s(%s)", field.Type, field.BaseType.ExampleValue)
+		importList = append(importList, baseType.TestImportList...)
+
+	case domain.FieldTypeLocalCustomType:
+		//baseType, err := i.AstRepository.GetTypeFieldFromPackage(i.interfacePackage.FullPath, field.Type)
+		//if err != nil {
+		//	err = fmt.Errorf("get base type of %s failed: %w", field.Type, err)
+		//	fmt.Printf(err.Error())
+		//	return
+		//}
+		//_ = baseType
+
+	default:
 
 		fmt.Println("unknown type:", field.Type)
 
