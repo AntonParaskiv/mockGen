@@ -23,7 +23,6 @@ type Field struct {
 	WantName       string
 	GotName        string
 	Type           string
-	TypeType       int64
 	BaseType       *Field
 	NameType       string
 	ExampleValue   string

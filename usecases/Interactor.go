@@ -253,7 +253,7 @@ func (i *Interactor) createExampleValue(field *domain.Field) (exampleValue strin
 			}
 		}
 
-		baseType, err := i.AstRepository.GetTypeFieldFromPackage(packagePath, typeName)
+		baseType, err := i.AstRepository.GetTypeFieldFromPackagePath(packagePath, typeName)
 		if err != nil {
 			err = fmt.Errorf("get base type of %s failed: %w", field.Type, err)
 			fmt.Printf(err.Error())
@@ -269,7 +269,7 @@ func (i *Interactor) createExampleValue(field *domain.Field) (exampleValue strin
 		importList = append(importList, baseType.TestImportList...)
 
 	case domain.FieldTypeLocalCustomType:
-		//baseType, err := i.AstRepository.GetTypeFieldFromPackage(i.interfacePackage.FullPath, field.Type)
+		//baseType, err := i.AstRepository.GetTypeFieldFromPackagePath(i.interfacePackage.FullPath, field.Type)
 		//if err != nil {
 		//	err = fmt.Errorf("get base type of %s failed: %w", field.Type, err)
 		//	fmt.Printf(err.Error())
