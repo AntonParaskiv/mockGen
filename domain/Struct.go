@@ -1,11 +1,23 @@
 package domain
 
 type Struct struct {
-	Name         string
-	ReceiverName string
-	WantName     string
-	GotName      string
-	FieldList    []*Field
-	Code         string
-	ImportList   []*Import
+	Name       string
+	FieldList  []*Field
+	Code       string
+	ImportList []*Import
+}
+
+func (s *Struct) GetReceiverName() (receiverName string) {
+	receiverName = getReceiverName(s.Name)
+	return
+}
+
+func (s *Struct) GetWantName() (wantName string) {
+	wantName = "want" + toPublic(s.Name)
+	return
+}
+
+func (s *Struct) GetGotName() (gotName string) {
+	gotName = "got" + toPublic(s.Name)
+	return
 }

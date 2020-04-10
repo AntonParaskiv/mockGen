@@ -96,11 +96,6 @@ func getImportListFromAstFile(astFile *ast.File) (importList []*domain.Import) {
 			Name: getNodeName(spec),
 			Path: strings.Trim(spec.Path.Value, `"`),
 		}
-		if Import.Name != "" {
-			Import.Key = Import.Name
-		} else {
-			Import.Key = filepath.Base(Import.Path)
-		}
 		importList = append(importList, Import)
 	}
 	return

@@ -20,11 +20,8 @@ const (
 
 type Field struct {
 	Name           string
-	WantName       string
-	GotName        string
 	Type           string
 	BaseType       *Field
-	NameType       string
 	ExampleValue   string
 	CodeImportList []*Import
 	TestImportList []*Import
@@ -82,5 +79,20 @@ func (f *Field) GetTypeName() (typeName string) {
 		return
 	}
 	typeName = f.Type[separatorIndex+1:]
+	return
+}
+
+func (f *Field) GetWantName() (wantName string) {
+	wantName = "want" + toPublic(f.Name)
+	return
+}
+
+func (f *Field) GetGotName() (gotName string) {
+	gotName = "got" + toPublic(f.Name)
+	return
+}
+
+func (f *Field) GetNameType() (nameType string) {
+	nameType = f.Name + " " + f.Type
 	return
 }

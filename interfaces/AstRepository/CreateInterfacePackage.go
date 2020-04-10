@@ -48,8 +48,6 @@ func initInterfacePackage(packagePath, packageName string) (interfacePackage *do
 	}
 
 	selfImport := &domain.Import{
-		Key:  filepath.Base(goPathSrcPackagePath),
-		Name: "",
 		Path: filepath.ToSlash(goPathSrcPackagePath),
 	}
 

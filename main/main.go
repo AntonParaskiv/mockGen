@@ -5,7 +5,7 @@ import (
 	"github.com/AntonParaskiv/mockGen/infrastructure/CodeStorage"
 	"github.com/AntonParaskiv/mockGen/interfaces/AstRepository"
 	"github.com/AntonParaskiv/mockGen/interfaces/Printer"
-	"github.com/AntonParaskiv/mockGen/usecases"
+	"github.com/AntonParaskiv/mockGen/usecases/Interactor"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	astRepository := AstRepository.Repository{
 		CodeStorage: codeStorage,
 	}
-	interactor := usecases.Interactor{
+	interactor := Interactor.Interactor{
 		AstRepository: astRepository,
 	}
 	printer := Printer.Printer{}
