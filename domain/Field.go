@@ -27,6 +27,11 @@ type Field struct {
 	TestImportList []*Import
 }
 
+func (f *Field) GetPublicName() (publicName string) {
+	publicName = toPublic(f.Name)
+	return
+}
+
 func (f *Field) GetTypeType() (typeType int64) {
 	switch {
 	case f.Type == "string":

@@ -7,6 +7,11 @@ type Struct struct {
 	ImportList []*Import
 }
 
+func (s *Struct) GetPublicName() (publicName string) {
+	publicName = toPublic(s.Name)
+	return
+}
+
 func (s *Struct) GetReceiverName() (receiverName string) {
 	receiverName = getReceiverName(s.Name)
 	return

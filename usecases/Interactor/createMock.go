@@ -10,12 +10,12 @@ func (i *Interactor) createMock(iFace *domain.Interface) (mock *domain.Mock) {
 	resultList := []*domain.Field{}
 	for _, method := range mock.MethodList {
 		for _, arg := range method.ArgList {
-			arg.ExampleValue, arg.TestImportList = i.createExampleValue(arg)
+			i.createFieldExampleValue(arg)
 			method.CodeImportList = append(method.CodeImportList, arg.CodeImportList...) // TODO: add unique
 			method.TestImportList = append(method.TestImportList, arg.TestImportList...) // TODO: add unique
 		}
 		for _, result := range method.ResultList {
-			result.ExampleValue, result.TestImportList = i.createExampleValue(result)
+			i.createFieldExampleValue(result)
 			method.CodeImportList = append(method.CodeImportList, result.CodeImportList...) // TODO: add unique
 			method.TestImportList = append(method.TestImportList, result.TestImportList...) // TODO: add unique
 		}
@@ -48,7 +48,7 @@ ResultLoop:
 
 	for _, field := range mock.Struct.FieldList {
 		mock.SetterList = append(mock.SetterList, &domain.Setter{
-			Name:  "Set" + toPublic(field.Name),
+			Name:  "Set" + field.GetPublicName(),
 			Field: field,
 		})
 	}
@@ -56,23 +56,18 @@ ResultLoop:
 }
 
 func (i *Interactor) initMock(iFaceName string) (mock *domain.Mock) {
-	structName := iFaceName
-	basePackageName := cutPostfix(i.mockPackage.PackageName, "Mock")
-
-	var constructorName string
-	if structName == basePackageName {
-		constructorName = "New"
-	} else {
-		constructorName = "New" + toPublic(structName)
-	}
-
 	mock = &domain.Mock{
 		Struct: &domain.Struct{
-			Name: structName,
+			Name: iFaceName,
 		},
 		Constructor: &domain.Constructor{
-			Name: constructorName,
+			Name: "New",
 		},
+	}
+
+	basePackageName := cutPostfix(i.mockPackage.PackageName, "Mock")
+	if mock.Struct.Name != basePackageName {
+		mock.Constructor.Name += mock.Struct.GetPublicName()
 	}
 
 	return
