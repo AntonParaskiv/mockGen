@@ -38,7 +38,7 @@ func main() {
 	}
 
 	mockPackage := interactor.CreateMockPackage(interfacePackage)
-	printer.GenerateCode(mockPackage)
+	printer.GeneratePackageCode(mockPackage)
 
 	err = codeStorage.SaveGoPackage(mockPackage)
 	if err != nil {
