@@ -7,45 +7,37 @@ import (
 )
 
 func (i *Interactor) createFieldExampleValue(field *domain.Field) {
-	switch field.GetTypeType() {
-	case domain.FieldTypeString:
-		createMyFieldNameExampleValue(field)
-	case domain.FieldTypeInterface:
-		createMyFieldNameExampleValue(field)
-	case domain.FieldTypeInts:
-		createIntExampleValue(field)
-	case domain.FieldTypeFloat:
-		createFloatExampleValue(field)
-	case domain.FieldTypeBool:
+	switch field.GetTypeGroup() {
+	case domain.FieldTypeGroupBool:
 		createBoolExampleValue(field)
-	case domain.FieldTypeRune:
-		createRuneExampleValue(field)
-	case domain.FieldTypeByte:
+	case domain.FieldTypeGroupString:
+		createMyFieldNameExampleValue(field)
+	case domain.FieldTypeGroupNumber:
+		createIntExampleValue(field)
+	case domain.FieldTypeGroupByte:
 		createByteExampleValue(field)
-	case domain.FieldTypeError:
-		createErrorExampleValue(field)
-	case domain.FieldTypeArray:
-		i.createArrayExampleValue(field)
-	case domain.FieldTypeMap:
-		i.createMapExampleValue(field)
-	case domain.FieldTypeImportedCustomType:
-		i.createImportedCustomExampleValue(field)
-	//case domain.FieldTypeLocalCustomType:
-	//	i.createImportedCustomExampleValue(field)
+	case domain.FieldTypeGroupRune:
+		createRuneExampleValue(field)
 	default:
-		fmt.Println("unknown type:", field.Type)
-		// TODO: struct
-		// TODO: custom type
-		// TODO: ptr string
-		// TODO: ptr int
-		// TODO: ptr uint
-		// TODO: ptr float
-		// TODO: ptr bool
-		// TODO: ptr rune
-		// TODO: ptr byte
-		// TODO: ptr error
-		// TODO: ptr array
-		// TODO: ptr map
+		switch field.GetTypeType() {
+
+		case domain.FieldTypeInterface:
+			createMyFieldNameExampleValue(field)
+		case domain.FieldTypeError:
+			createErrorExampleValue(field)
+		case domain.FieldTypeArray:
+			i.createArrayExampleValue(field)
+		case domain.FieldTypeMap:
+			i.createMapExampleValue(field)
+		case domain.FieldTypeImportedCustomType:
+			i.createImportedCustomExampleValue(field)
+		//case domain.FieldTypeLocalCustomType:
+		//	i.createImportedCustomExampleValue(field)
+		case domain.FieldTypePointer:
+			i.createPointerExampleValue(field)
+		default:
+			fmt.Println("unknown type:", field.Type)
+		}
 	}
 	return
 }
@@ -111,14 +103,15 @@ func (i *Interactor) createMapExampleValue(field *domain.Field) {
 
 func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 	// check self import
-	for _, Import := range field.CodeImportList {
-		if Import == i.interfacePackage.SelfImport {
-			//mock := i.mockPackage.GetMockByName(field.GetTypeName())
-			//_ = mock
-			//importList = append(importList, field.CodeImportList...)
-			return
-		}
-	}
+	//for _, Import := range field.CodeImportList {
+	//	if Import == i.interfacePackage.SelfImport {
+	//		//mock := i.mockPackage.GetMockByName(field.GetTypeName())
+	//		//_ = mock
+	//		//importList = append(importList, field.CodeImportList...)
+	//		return
+	//	}
+	//}
+
 	splitted := strings.Split(field.Type, ".")
 	if len(splitted) != 2 {
 		err := fmt.Errorf("parse imported custom type failed: %s", field.Type)
@@ -144,6 +137,63 @@ func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 	field.BaseType = baseType
 	field.ExampleValue = fmt.Sprintf("%s(%s)", field.Type, field.BaseType.ExampleValue)
 	field.TestImportList = append(field.TestImportList, baseType.CodeImportList...)
+}
+
+func (i *Interactor) createPointerExampleValue(field *domain.Field) {
+	baseField := &domain.Field{Type: field.Type[1:], Name: field.Name}
+	i.createFieldExampleValue(baseField)
+
+	switch baseField.GetTypeType() {
+	case domain.FieldTypeBool:
+		field.ExampleValue = `GetPointer.Bool(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeString:
+		field.ExampleValue = `GetPointer.String(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeInt:
+		field.ExampleValue = `GetPointer.Int(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeInt8:
+		field.ExampleValue = `GetPointer.Int8(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeInt16:
+		field.ExampleValue = `GetPointer.Int16(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeInt32:
+		field.ExampleValue = `GetPointer.Int32(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeInt64:
+		field.ExampleValue = `GetPointer.Int64(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeUint:
+		field.ExampleValue = `GetPointer.Uint(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeUint8:
+		field.ExampleValue = `GetPointer.Uint8(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeUint16:
+		field.ExampleValue = `GetPointer.Uint16(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeUint32:
+		field.ExampleValue = `GetPointer.Uint32(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeUint64:
+		field.ExampleValue = `GetPointer.Uint64(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeUintPtr:
+		field.ExampleValue = `GetPointer.UintPtr(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeByte:
+		field.ExampleValue = `GetPointer.Byte(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeRune:
+		field.ExampleValue = `GetPointer.Rune(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeFloat32:
+		field.ExampleValue = `GetPointer.Float32(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeFloat64:
+		field.ExampleValue = `GetPointer.Float64(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeComplex64:
+		field.ExampleValue = `GetPointer.Complex64(` + baseField.ExampleValue + `)`
+	case domain.FieldTypeComplex128:
+		field.ExampleValue = `GetPointer.Complex128(` + baseField.ExampleValue + `)`
+
+	case domain.FieldTypeError:
+	case domain.FieldTypeArray:
+	case domain.FieldTypeMap:
+	case domain.FieldTypeImportedCustomType:
+	case domain.FieldTypeLocalCustomType:
+	//case domain.FieldTypeInterface:
+	//case domain.FieldTypePointer:
+	default:
+	}
+
+	return
 }
 
 func getMapKeyValueTypes(fieldType string) (keyType, valueType string) {

@@ -2,22 +2,6 @@ package domain
 
 import "strings"
 
-const (
-	FieldTypeUnknown = iota
-	FieldTypeString
-	FieldTypeInterface
-	FieldTypeInts
-	FieldTypeFloat
-	FieldTypeBool
-	FieldTypeRune
-	FieldTypeByte
-	FieldTypeError
-	FieldTypeArray
-	FieldTypeMap
-	FieldTypeImportedCustomType
-	FieldTypeLocalCustomType
-)
-
 type Field struct {
 	Name           string
 	Type           string
@@ -32,40 +16,64 @@ func (f *Field) GetPublicName() (publicName string) {
 	return
 }
 
+//////////////////// basic types
+// +bool
+// +string
+// +int  int8  int16  int32  int64
+// +uint uint8 uint16 uint32 uint64 uintptr
+// +byte // alias for uint8
+// +rune // alias for int32 // represents a Unicode code point
+// +float32 float64
+// +complex64 complex128
+
+//////////////////// advanced types
+// +*
+// +[]
+// +map[]
+// custom type
+
+//////////////////// special types
+// struct
+// interface {}
+// error
+
 func (f *Field) GetTypeType() (typeType int64) {
-	switch {
-	case f.Type == "string":
-		typeType = FieldTypeString
-	case f.Type == "interface{}":
+	// check basic type
+	basicType, ok := MapBasicTypeStringToInt[f.Type]
+	if ok {
+		typeType = basicType
+		return
+	}
+
+	switch f.Type {
+	case "interface{}":
 		typeType = FieldTypeInterface
-	case len(f.Type) >= 3 && f.Type[0:3] == "int": // int must be after interface !
-		typeType = FieldTypeInts
-	case len(f.Type) >= 4 && f.Type[0:4] == "uint":
-		typeType = FieldTypeInts
-	case len(f.Type) >= 5 && f.Type[0:5] == "float":
-		typeType = FieldTypeFloat
-	case f.Type == "bool":
-		typeType = FieldTypeBool
-	case f.Type == "rune":
-		typeType = FieldTypeRune
-	case f.Type == "byte":
-		typeType = FieldTypeByte
-	case f.Type == "error":
+	case "error":
 		typeType = FieldTypeError
-	case len(f.Type) >= 2 && f.Type[0:2] == "[]":
-		typeType = FieldTypeArray
-	case len(f.Type) >= 4 && f.Type[0:4] == "map[":
-		typeType = FieldTypeMap
 	default:
-		switch len(strings.Split(f.Type, ".")) {
-		case 1:
-			typeType = FieldTypeLocalCustomType
-		case 2:
-			typeType = FieldTypeImportedCustomType
+		switch {
+		case len(f.Type) >= 2 && f.Type[0:2] == "[]":
+			typeType = FieldTypeArray
+		case len(f.Type) >= 4 && f.Type[0:4] == "map[":
+			typeType = FieldTypeMap
+		case len(f.Type) > 1 && f.Type[0] == '*':
+			typeType = FieldTypePointer
 		default:
-			typeType = FieldTypeUnknown
+			switch len(strings.Split(f.Type, ".")) {
+			case 1:
+				typeType = FieldTypeLocalCustomType
+			case 2:
+				typeType = FieldTypeImportedCustomType
+			default:
+				typeType = FieldTypeUnknown
+			}
 		}
 	}
+	return
+}
+
+func (f *Field) GetTypeGroup() (typeGroup int64) {
+	typeGroup = MapBasicTypeToGroup[f.GetTypeType()]
 	return
 }
 

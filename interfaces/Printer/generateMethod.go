@@ -56,7 +56,13 @@ func generateMethodTest(mock *domain.Mock, method *domain.Method) (code string) 
 		code += fmt.Sprintf("		%s: tt.fields.%s,\n", result.Name, result.Name)
 	}
 	code += fmt.Sprintf("			}\n")
-	code += fmt.Sprintf("			%s := %s.%s(%s)\n", createGotResultLine(method.ResultList), mock.Struct.GetReceiverName(), method.Name, createTtArgLine(method.ArgList))
+
+	gotResultLine := createGotResultLine(method.ResultList)
+	if len(gotResultLine) > 0 {
+		code += fmt.Sprintf("			%s := %s.%s(%s)\n", createGotResultLine(method.ResultList), mock.Struct.GetReceiverName(), method.Name, createTtArgLine(method.ArgList))
+	} else {
+		code += fmt.Sprintf("			%s.%s(%s)\n", mock.Struct.GetReceiverName(), method.Name, createTtArgLine(method.ArgList))
+	}
 
 	for _, result := range method.ResultList {
 		code += fmt.Sprintf("			if !reflect.DeepEqual(%s, tt.%s) {\n", result.GetGotName(), result.GetWantName())
