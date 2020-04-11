@@ -14,6 +14,7 @@ func generateSetter(mock *domain.Mock, setter *domain.Setter) (code string) {
 }
 
 func generateSetterTest(mock *domain.Mock, setter *domain.Setter) (code string) {
+
 	code += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Struct.Name, setter.Name)
 
 	code += fmt.Sprintf("	type args struct {\n")
@@ -25,15 +26,9 @@ func generateSetterTest(mock *domain.Mock, setter *domain.Setter) (code string) 
 	code += fmt.Sprintf("		args args\n")
 	code += fmt.Sprintf("		%s	*%s\n", mock.Struct.GetWantName(), mock.Struct.Name)
 	code += fmt.Sprintf("	}{\n")
-	code += fmt.Sprintf("		{\n")
-	code += fmt.Sprintf("			name: \"Setting\",\n")
-	code += fmt.Sprintf("			args: args{\n")
-	code += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
-	code += fmt.Sprintf("			},\n")
-	code += fmt.Sprintf("			%s: &%s{\n", mock.Struct.GetWantName(), mock.Struct.Name)
-	code += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
-	code += fmt.Sprintf("			},\n")
-	code += fmt.Sprintf("		},\n")
+
+	code += generateSetterTestCase(mock, setter)
+
 	code += fmt.Sprintf("	}\n")
 
 	code += fmt.Sprintf("	for _, tt := range tests {\n")
@@ -47,5 +42,25 @@ func generateSetterTest(mock *domain.Mock, setter *domain.Setter) (code string) 
 	code += fmt.Sprintf("	}\n")
 
 	code += fmt.Sprintf("}\n\n")
+	return
+}
+
+func generateSetterTestCase(mock *domain.Mock, setter *domain.Setter) (code string) {
+	if len(setter.Field.ExampleValue) == 0 {
+		err := fmt.Errorf("no example value for %s", setter.Field.GetNameType())
+		err = fmt.Errorf("create setter %s.%s() test case failed: %w", mock.Struct.Name, setter.Name, err)
+		fmt.Println(err)
+		code += "		// TODO: Add test cases.\n"
+		return
+	}
+	code += fmt.Sprintf("		{\n")
+	code += fmt.Sprintf("			name: \"Setting\",\n")
+	code += fmt.Sprintf("			args: args{\n")
+	code += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
+	code += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("			%s: &%s{\n", mock.Struct.GetWantName(), mock.Struct.Name)
+	code += fmt.Sprintf("			%s: %s,\n", setter.Field.Name, setter.Field.ExampleValue)
+	code += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("		},\n")
 	return
 }

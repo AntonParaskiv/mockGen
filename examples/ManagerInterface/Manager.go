@@ -7,10 +7,6 @@ type Manager interface {
 	SignIn(accountId int64, password examples.Password, id interface{}) (nickName string, Byte byte, balance float64, messages []string, messagesId []uint)
 }
 
-//type Manager interface {
-//	SignIn(accountId int64) (nickName string)
-//}
-
-//type Factory interface {
-//	Create(accountId int64) (manager Manager)
-//}
+type Factory interface {
+	Create(accountId int64) (manager Manager)
+}

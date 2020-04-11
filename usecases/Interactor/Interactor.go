@@ -6,8 +6,9 @@ import (
 )
 
 type Interactor struct {
-	AstRepository    AstRepository.Repository
-	mockFile         *domain.GoCodeFile
-	interfacePackage *domain.GoCodePackage
-	mockPackage      *domain.GoCodePackage
+	AstRepository       AstRepository.Repository
+	mockFile            *domain.GoCodeFile
+	interfacePackage    *domain.GoCodePackage
+	mockPackage         *domain.GoCodePackage
+	CreateFieldExamples bool
 }

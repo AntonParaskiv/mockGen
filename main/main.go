@@ -18,9 +18,12 @@ func main() {
 		CodeStorage: codeStorage,
 	}
 	interactor := Interactor.Interactor{
-		AstRepository: astRepository,
+		AstRepository:       astRepository,
+		CreateFieldExamples: true,
 	}
-	printer := Printer.Printer{}
+	printer := Printer.Printer{
+		GenerateTests: true,
+	}
 
 	astPackage, err := codeStorage.GetAstPackage(interfacePackagePath)
 	if err != nil {

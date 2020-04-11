@@ -30,8 +30,8 @@ func (i *Interactor) createFieldExampleValue(field *domain.Field) {
 		i.createMapExampleValue(field)
 	case domain.FieldTypeImportedCustomType:
 		i.createImportedCustomExampleValue(field)
-	case domain.FieldTypeLocalCustomType:
-		i.createImportedCustomExampleValue(field)
+	//case domain.FieldTypeLocalCustomType:
+	//	i.createImportedCustomExampleValue(field)
 	default:
 		fmt.Println("unknown type:", field.Type)
 		// TODO: struct
@@ -82,7 +82,7 @@ func createByteExampleValue(field *domain.Field) {
 
 func createErrorExampleValue(field *domain.Field) {
 	field.ExampleValue = `fmt.Errorf("simulated error")`
-	field.CodeImportList = append(field.CodeImportList, &domain.Import{Path: "fmt"})
+	field.TestImportList = append(field.TestImportList, &domain.Import{Path: "fmt"})
 	return
 }
 
@@ -131,7 +131,7 @@ func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 	for _, Import := range i.mockFile.ImportList {
 		if Import.GetCallingName() == importKey {
 			packagePath = Import.Path
-			field.CodeImportList = append(field.CodeImportList, Import)
+			field.TestImportList = append(field.TestImportList, Import)
 		}
 	}
 	baseType, err := i.AstRepository.GetTypeFieldFromPackagePath(packagePath, typeName)
@@ -143,7 +143,7 @@ func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 	i.createFieldExampleValue(baseType)
 	field.BaseType = baseType
 	field.ExampleValue = fmt.Sprintf("%s(%s)", field.Type, field.BaseType.ExampleValue)
-	field.CodeImportList = append(field.CodeImportList, baseType.CodeImportList...)
+	field.TestImportList = append(field.TestImportList, baseType.CodeImportList...)
 }
 
 func getMapKeyValueTypes(fieldType string) (keyType, valueType string) {

@@ -10,9 +10,11 @@ func (p *Printer) GeneratePackageCode(mockPackage *domain.GoCodePackage) {
 		// TODO: check if go code file (not test)
 		p.generateFile(mockFile)
 
-		mockFileTest := p.generateFileTest(mockFile)
-		if mockFileTest != nil {
-			mockPackage.FileList = append(mockPackage.FileList, mockFileTest)
+		if p.GenerateTests {
+			mockFileTest := p.generateFileTest(mockFile)
+			if mockFileTest != nil {
+				mockPackage.FileList = append(mockPackage.FileList, mockFileTest)
+			}
 		}
 	}
 	return

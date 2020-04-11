@@ -20,6 +20,7 @@ func generateMethod(mock *domain.Mock, method *domain.Method) (code string) {
 }
 
 func generateMethodTest(mock *domain.Mock, method *domain.Method) (code string) {
+
 	code += fmt.Sprintf("func Test%s_%s(t *testing.T) {\n", mock.Struct.Name, method.Name)
 
 	code += fmt.Sprintf("	type fields struct {\n")
@@ -43,35 +44,9 @@ func generateMethodTest(mock *domain.Mock, method *domain.Method) (code string) 
 	}
 	code += fmt.Sprintf("		%s	*%s\n", mock.Struct.GetWantName(), mock.Struct.Name)
 	code += fmt.Sprintf("	}{\n")
-	code += fmt.Sprintf("		{\n")
-	code += fmt.Sprintf("			name: \"Success\",\n")
 
-	code += fmt.Sprintf("			fields: fields{\n")
-	for _, result := range method.ResultList {
-		code += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
-	}
-	code += fmt.Sprintf("			},\n")
+	code += generateMethodTestCase(mock, method)
 
-	code += fmt.Sprintf("			args: args{\n")
-	for _, arg := range method.ArgList {
-		code += fmt.Sprintf("		%s: %s,\n", arg.Name, arg.ExampleValue)
-	}
-	code += fmt.Sprintf("			},\n")
-
-	for _, result := range method.ResultList {
-		code += fmt.Sprintf("		%s: %s,\n", result.GetWantName(), result.ExampleValue)
-	}
-
-	code += fmt.Sprintf("			%s: &%s{\n", mock.Struct.GetWantName(), mock.Struct.Name)
-	for _, arg := range method.ArgList {
-		code += fmt.Sprintf("			%s: %s,\n", arg.Name, arg.ExampleValue)
-	}
-	for _, result := range method.ResultList {
-		code += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
-	}
-	code += fmt.Sprintf("			},\n")
-
-	code += fmt.Sprintf("		},\n")
 	code += fmt.Sprintf("	}\n")
 
 	code += fmt.Sprintf("	for _, tt := range tests {\n")
@@ -97,6 +72,54 @@ func generateMethodTest(mock *domain.Mock, method *domain.Method) (code string) 
 	code += fmt.Sprintf("	}\n")
 
 	code += fmt.Sprintf("}\n\n")
+	return
+}
+
+func generateMethodTestCase(mock *domain.Mock, method *domain.Method) (code string) {
+	var errs []error
+	for _, field := range method.ArgList {
+		if len(field.ExampleValue) == 0 {
+			errs = append(errs, fmt.Errorf("no example value for arg %s", field.GetNameType()))
+		}
+	}
+	for _, field := range method.ResultList {
+		if len(field.ExampleValue) == 0 {
+			errs = append(errs, fmt.Errorf("no example value for result %s", field.GetNameType()))
+		}
+	}
+	if len(errs) > 0 {
+		for _, err := range errs {
+			err = fmt.Errorf("create method %s.%s() test case failed: %w", mock.Struct.Name, method.Name, err)
+			fmt.Println(err)
+		}
+		code += "		// TODO: Add test cases.\n"
+		return
+	}
+
+	code += fmt.Sprintf("		{\n")
+	code += fmt.Sprintf("			name: \"Success\",\n")
+	code += fmt.Sprintf("			fields: fields{\n")
+	for _, result := range method.ResultList {
+		code += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
+	}
+	code += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("			args: args{\n")
+	for _, arg := range method.ArgList {
+		code += fmt.Sprintf("		%s: %s,\n", arg.Name, arg.ExampleValue)
+	}
+	code += fmt.Sprintf("			},\n")
+	for _, result := range method.ResultList {
+		code += fmt.Sprintf("		%s: %s,\n", result.GetWantName(), result.ExampleValue)
+	}
+	code += fmt.Sprintf("			%s: &%s{\n", mock.Struct.GetWantName(), mock.Struct.Name)
+	for _, arg := range method.ArgList {
+		code += fmt.Sprintf("			%s: %s,\n", arg.Name, arg.ExampleValue)
+	}
+	for _, result := range method.ResultList {
+		code += fmt.Sprintf("		%s: %s,\n", result.Name, result.ExampleValue)
+	}
+	code += fmt.Sprintf("			},\n")
+	code += fmt.Sprintf("		},\n")
 	return
 }
 

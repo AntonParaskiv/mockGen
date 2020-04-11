@@ -10,6 +10,11 @@ func (i *Interactor) createMockFile(interfaceFile *domain.GoCodeFile) {
 
 	for _, iFace := range interfaceFile.InterfaceList {
 		mock := i.createMock(iFace)
+
+		if i.CreateFieldExamples {
+			i.createMockFieldsExampleValues(mock)
+		}
+
 		i.mockFile.MockList = append(i.mockFile.MockList, mock)
 	}
 
