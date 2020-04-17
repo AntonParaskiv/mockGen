@@ -121,16 +121,17 @@ func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 	importKey := splitted[0]
 	typeName := splitted[1]
 	packagePath := ""
-	for _, Import := range i.mockFile.ImportList {
+	for _, Import := range field.CodeImportList {
 		if Import.GetCallingName() == importKey {
 			packagePath = Import.Path
 			field.TestImportList = append(field.TestImportList, Import)
 		}
 	}
+
 	baseType, err := i.AstRepository.GetTypeFieldFromPackagePath(packagePath, typeName)
 	if err != nil {
 		err = fmt.Errorf("get base type of %s failed: %w", field.Type, err)
-		fmt.Printf(err.Error())
+		fmt.Println(err.Error())
 		return
 	}
 	i.createFieldExampleValue(baseType)
@@ -140,7 +141,7 @@ func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 }
 
 func (i *Interactor) createPointerExampleValue(field *domain.Field) {
-	baseField := &domain.Field{Type: field.Type[1:], Name: field.Name}
+	baseField := &domain.Field{Type: field.Type[1:], Name: field.Name, CodeImportList: field.CodeImportList}
 	i.createFieldExampleValue(baseField)
 
 	switch baseField.GetTypeType() {

@@ -30,9 +30,13 @@ func (f *Field) GetPublicName() (publicName string) {
 // +*
 // +[]
 // +map[]
-// custom type
 
 //////////////////// special types
+// custom type
+//		+basic,
+//		-*
+//		[]
+//		map[]
 // struct
 // interface {}
 // error

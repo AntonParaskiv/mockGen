@@ -6,10 +6,18 @@ import (
 	"github.com/AntonParaskiv/mockGen/interfaces/AstRepository"
 	"github.com/AntonParaskiv/mockGen/interfaces/Printer"
 	"github.com/AntonParaskiv/mockGen/usecases/Interactor"
+	"os"
 )
 
 func main() {
-	interfacePackagePath := "examples/ManagerInterface"
+
+	if len(os.Args[1:]) == 0 {
+		usage()
+		return
+	}
+
+	interfacePackagePath := os.Args[1]
+	//interfacePackagePath := "examples/ManagerInterface"
 
 	codeStorage := CodeStorage.Storage{
 		FormatEnabled: true,
@@ -48,5 +56,10 @@ func main() {
 		panic(err)
 	}
 
+	return
+}
+
+func usage() {
+	fmt.Println("usage")
 	return
 }
