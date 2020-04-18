@@ -11,14 +11,14 @@ import (
 
 func main() {
 
+	// get arg interface package path
 	if len(os.Args[1:]) == 0 {
 		usage()
-		return
+		os.Exit(1)
 	}
-
 	interfacePackagePath := os.Args[1]
-	//interfacePackagePath := "examples/ManagerInterface"
 
+	// init app components
 	codeStorage := CodeStorage.Storage{
 		FormatEnabled: true,
 	}
@@ -33,6 +33,7 @@ func main() {
 		GenerateTests: true,
 	}
 
+	// start generating
 	astPackage, err := codeStorage.GetAstPackage(interfacePackagePath)
 	if err != nil {
 		err = fmt.Errorf("get ast package failed: %w", err)
@@ -60,6 +61,6 @@ func main() {
 }
 
 func usage() {
-	fmt.Println("usage")
+	fmt.Println("Usage: mockGen packagePath")
 	return
 }

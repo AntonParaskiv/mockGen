@@ -22,9 +22,6 @@ const (
 	FieldTypeComplex64
 	FieldTypeComplex128
 
-	FieldTypeInts  // TODO: remove this
-	FieldTypeFloat // TODO: remove this
-
 	FieldTypeInterface
 	FieldTypeError
 	FieldTypeArray
@@ -84,6 +81,6 @@ var MapBasicTypeToGroup = map[int64]int64{
 	FieldTypeRune:       FieldTypeGroupRune,
 	FieldTypeFloat32:    FieldTypeGroupNumber,
 	FieldTypeFloat64:    FieldTypeGroupNumber,
-	FieldTypeComplex64:  FieldTypeGroupNumber, // TODO: check complex64 is number ?
-	FieldTypeComplex128: FieldTypeGroupNumber, // TODO: check complex128 is number ?
+	FieldTypeComplex64:  FieldTypeGroupNumber,
+	FieldTypeComplex128: FieldTypeGroupNumber,
 }
