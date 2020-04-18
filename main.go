@@ -7,6 +7,7 @@ import (
 	"github.com/AntonParaskiv/mockGen/interfaces/Printer"
 	"github.com/AntonParaskiv/mockGen/usecases/Interactor"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -16,7 +17,11 @@ func main() {
 		usage()
 		os.Exit(1)
 	}
-	interfacePackagePath := os.Args[1]
+	interfacePackagePath, err := filepath.Abs(os.Args[1])
+	if err != nil {
+		err = fmt.Errorf("get absolute interface package path failed: %w", err)
+		os.Exit(1)
+	}
 
 	// init app components
 	codeStorage := CodeStorage.Storage{
