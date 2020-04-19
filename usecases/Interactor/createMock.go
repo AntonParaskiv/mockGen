@@ -21,8 +21,18 @@ func (i *Interactor) createMock(iFace *domain.Interface) (mock *domain.Mock) {
 
 	// create setters
 	for _, field := range mock.Struct.FieldList {
+		setterName := "Set" + field.GetPublicName()
+
+		// check setter name conflicts
+		for _, method := range mock.MethodList {
+			if method.Name == setterName {
+				setterName = "SetField" + field.GetPublicName()
+				break
+			}
+		}
+
 		mock.SetterList = append(mock.SetterList, &domain.Setter{
-			Name:  "Set" + field.GetPublicName(),
+			Name:  setterName,
 			Field: field,
 		})
 	}
