@@ -10,7 +10,10 @@ type Rune rune
 type Byte byte
 
 type Manager interface {
-	Registration() (bool, int, string)
+	Select(query interface{})
+	Get() (query string)
+	Where(query ...interface{})
+	Count() (query []int)
 	//RegistrationBasic(isAdult bool, nickName string) (accountId int64, userId uint64, xVar uintptr, complex complex128, sign rune, flags byte)
 	//RegistrationBasicPointer(isAdult *bool, nickName *string) (accountId *int64, userId *uint64, xVar *uintptr, complex *complex128, sign *rune, flags *byte)
 	//RegistrationBasicArray(isAdult []bool, nickName []string) (accountId []int64, userId []uint64, xVar []uintptr, complex []complex128, sign []rune, flags []byte)
