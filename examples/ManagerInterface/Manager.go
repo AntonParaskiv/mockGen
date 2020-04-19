@@ -10,7 +10,7 @@ type Rune rune
 type Byte byte
 
 type Manager interface {
-	Registration(nickName chan []int)
+	Registration(nickName ...string)
 	//RegistrationBasic(isAdult bool, nickName string) (accountId int64, userId uint64, xVar uintptr, complex complex128, sign rune, flags byte)
 	//RegistrationBasicPointer(isAdult *bool, nickName *string) (accountId *int64, userId *uint64, xVar *uintptr, complex *complex128, sign *rune, flags *byte)
 	//RegistrationBasicArray(isAdult []bool, nickName []string) (accountId []int64, userId []uint64, xVar []uintptr, complex []complex128, sign []rune, flags []byte)

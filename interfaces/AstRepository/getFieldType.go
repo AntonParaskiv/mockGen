@@ -68,6 +68,15 @@ func getFieldType(astFieldType ast.Node) (fieldType string, err error) {
 		}
 		fieldType = fmt.Sprintf("*%s", baseFieldType)
 
+	case *ast.Ellipsis:
+		var baseFieldType string
+		baseFieldType, err = getFieldType(astType.Elt)
+		if err != nil {
+			err = fmt.Errorf("get base field type failed: %w", err)
+			return
+		}
+		fieldType = fmt.Sprintf("...%s", baseFieldType)
+
 	case *ast.ChanType:
 		var baseFieldType string
 		baseFieldType, err = getFieldType(astType.Value)

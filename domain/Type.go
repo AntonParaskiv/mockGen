@@ -30,6 +30,7 @@ const (
 	FieldTypeLocalCustomType
 	FieldTypePointer
 	FieldTypeChan
+	FieldTypeEllipsis
 )
 
 var MapBasicTypeStringToInt = map[string]int64{
