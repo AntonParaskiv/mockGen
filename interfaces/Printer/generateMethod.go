@@ -25,13 +25,13 @@ func generateMethodTest(mock *domain.Mock, method *domain.Method) (code string) 
 
 	code += fmt.Sprintf("	type fields struct {\n")
 	for _, result := range method.ResultList {
-		code += fmt.Sprintf("		%s %s\n", result.Name, result.Type)
+		code += fmt.Sprintf("		%s %s\n", result.Name, result.GetTypeViewStructField())
 	}
 	code += fmt.Sprintf("	}\n")
 
 	code += fmt.Sprintf("	type args struct {\n")
 	for _, arg := range method.ArgList {
-		code += fmt.Sprintf("		%s %s\n", arg.Name, arg.Type)
+		code += fmt.Sprintf("		%s %s\n", arg.Name, arg.GetTypeViewStructField())
 	}
 	code += fmt.Sprintf("	}\n")
 
@@ -132,7 +132,7 @@ func generateMethodTestCase(mock *domain.Mock, method *domain.Method) (code stri
 func createTtArgLine(argList []*domain.Field) (ttArgLine string) {
 	ttArgList := []string{}
 	for _, arg := range argList {
-		ttArgList = append(ttArgList, "tt.args."+arg.Name)
+		ttArgList = append(ttArgList, "tt.args."+arg.GetNameViewArg())
 	}
 	ttArgLine = strings.Join(ttArgList, ", ")
 	return

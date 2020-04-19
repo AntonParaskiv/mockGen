@@ -8,7 +8,7 @@ import (
 func generateStruct(mock *domain.Mock) (code string) {
 	code += fmt.Sprintf("type %s struct {\n", mock.Struct.Name)
 	for _, field := range mock.Struct.FieldList {
-		code += fmt.Sprintf("	%s %s\n", field.Name, field.Type)
+		code += fmt.Sprintf("	%s %s\n", field.Name, field.GetTypeViewStructField())
 	}
 	code += fmt.Sprintf("}\n\n")
 	return
