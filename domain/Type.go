@@ -29,6 +29,7 @@ const (
 	FieldTypeImportedCustomType
 	FieldTypeLocalCustomType
 	FieldTypePointer
+	FieldTypeChan
 )
 
 var MapBasicTypeStringToInt = map[string]int64{
