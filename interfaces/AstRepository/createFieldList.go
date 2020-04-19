@@ -6,10 +6,10 @@ import (
 	"go/ast"
 )
 
-func createFieldList(astFieldList []*ast.Field) (fieldList []*domain.Field, err error) {
-	for _, astField := range astFieldList {
+func (r *Repository) createFieldList(astFieldList []*ast.Field) (fieldList []*domain.Field, err error) {
+	for fieldIndex, astField := range astFieldList {
 		var fields []*domain.Field
-		fields, err = createFields(astField)
+		fields, err = r.createFields(astField, fieldIndex+1)
 		if err != nil {
 			err = fmt.Errorf("create fields from ast field failed: %w", err)
 			return
@@ -22,10 +22,19 @@ func createFieldList(astFieldList []*ast.Field) (fieldList []*domain.Field, err 
 	return
 }
 
-func createFields(astField *ast.Field) (fields []*domain.Field, err error) {
+func (r *Repository) createFields(astField *ast.Field, fieldNumber int) (fields []*domain.Field, err error) {
 	fieldType, err := getFieldType(astField.Type)
 	if err != nil {
 		err = fmt.Errorf("get field type failed: %w", err)
+		return
+	}
+
+	if len(astField.Names) == 0 {
+		field := &domain.Field{
+			Name: fmt.Sprintf("%sResult%d", r.currentMethod.GetPrivateName(), fieldNumber),
+			Type: fieldType,
+		}
+		fields = append(fields, field)
 		return
 	}
 

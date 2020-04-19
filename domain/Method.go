@@ -12,6 +12,11 @@ type Method struct {
 	TestImportList []*Import
 }
 
+func (m *Method) GetPrivateName() (privateName string) {
+	privateName = toPrivate(m.Name)
+	return
+}
+
 func (m *Method) GetArgLine() (argLine string) {
 	argLine = getLinedFieldList(m.ArgList)
 	return

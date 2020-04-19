@@ -6,21 +6,22 @@ import (
 	"go/ast"
 )
 
-func createMethod(astMethod *ast.Field) (method *domain.Method, err error) {
-	argList := make([]*domain.Field, 0)
-	resultList := make([]*domain.Field, 0)
+func (r *Repository) createMethod(astMethod *ast.Field) (method *domain.Method, err error) {
+	r.currentMethod = &domain.Method{
+		Name: getNodeName(astMethod),
+	}
 
 	switch astFuncType := astMethod.Type.(type) {
 	case *ast.FuncType:
 		if astFuncType.Params != nil {
-			argList, err = createFieldList(astFuncType.Params.List)
+			r.currentMethod.ArgList, err = r.createFieldList(astFuncType.Params.List)
 			if err != nil {
 				err = fmt.Errorf("create arg list from ast param list failed: %w", err)
 				return
 			}
 		}
 		if astFuncType.Results != nil {
-			resultList, err = createFieldList(astFuncType.Results.List)
+			r.currentMethod.ResultList, err = r.createFieldList(astFuncType.Results.List)
 			if err != nil {
 				err = fmt.Errorf("create result list from ast result list failed: %w", err)
 				return
@@ -31,10 +32,6 @@ func createMethod(astMethod *ast.Field) (method *domain.Method, err error) {
 		return
 	}
 
-	method = &domain.Method{
-		Name:       getNodeName(astMethod),
-		ArgList:    argList,
-		ResultList: resultList,
-	}
+	method = r.currentMethod
 	return
 }

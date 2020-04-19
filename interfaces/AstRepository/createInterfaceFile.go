@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func createInterfaceFile(astFile *ast.File, fullFileName string) (interfaceFile *domain.GoCodeFile, err error) {
+func (r *Repository) createInterfaceFile(astFile *ast.File, fullFileName string) (interfaceFile *domain.GoCodeFile, err error) {
 	if !isFileNameMatchGoCode(fullFileName) {
 		return
 	}
@@ -19,7 +19,7 @@ func createInterfaceFile(astFile *ast.File, fullFileName string) (interfaceFile 
 
 	for _, astInterfaceSpec := range astInterfaceSpecs {
 		var iFace *domain.Interface
-		iFace, err = createInterface(astInterfaceSpec)
+		iFace, err = r.createInterface(astInterfaceSpec)
 		if err != nil {
 			err = fmt.Errorf("create interface failed: %w", err)
 			return
