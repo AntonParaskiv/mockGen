@@ -8,30 +8,33 @@ import (
 
 func createFieldList(astFieldList []*ast.Field) (fieldList []*domain.Field, err error) {
 	for _, astField := range astFieldList {
-		var field *domain.Field
-		field, err = createField(astField)
+		var fields []*domain.Field
+		fields, err = createFields(astField)
 		if err != nil {
-			err = fmt.Errorf("create field from ast field failed: %w", err)
+			err = fmt.Errorf("create fields from ast field failed: %w", err)
 			return
 		}
-		if field == nil {
+		if fields == nil {
 			continue
 		}
-		fieldList = append(fieldList, field)
+		fieldList = append(fieldList, fields...)
 	}
 	return
 }
 
-func createField(astField *ast.Field) (field *domain.Field, err error) {
+func createFields(astField *ast.Field) (fields []*domain.Field, err error) {
 	fieldType, err := getFieldType(astField.Type)
 	if err != nil {
 		err = fmt.Errorf("get field type failed: %w", err)
 		return
 	}
 
-	field = &domain.Field{
-		Name: getNodeName(astField),
-		Type: fieldType,
+	for _, ident := range astField.Names {
+		field := &domain.Field{
+			Name: ident.Name,
+			Type: fieldType,
+		}
+		fields = append(fields, field)
 	}
 	return
 }
