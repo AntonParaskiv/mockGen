@@ -17,7 +17,7 @@ func (r *Repository) CreateInterfacePackage(astPackage *ast.Package, packagePath
 
 	for fullFileName, astFile := range astPackage.Files {
 		var interfaceFile *domain.GoCodeFile
-		interfaceFile, err = createInterfaceFile(astFile, fullFileName)
+		interfaceFile, err = r.createInterfaceFile(astFile, fullFileName)
 		if err != nil {
 			err = fmt.Errorf("create interface file failed: %w", err)
 			return
