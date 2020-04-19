@@ -36,7 +36,7 @@ func (i *Interactor) createFieldExampleValue(field *domain.Field) {
 		case domain.FieldTypePointer:
 			i.createPointerExampleValue(field)
 		default:
-			fmt.Println("unknown type:", field.Type)
+			fmt.Printf("create field example for %s failed: unknown type\n", field.Type)
 		}
 	}
 	return

@@ -62,6 +62,8 @@ func (f *Field) GetTypeType() (typeType int64) {
 			typeType = FieldTypeMap
 		case len(f.Type) > 1 && f.Type[0] == '*':
 			typeType = FieldTypePointer
+		case len(f.Type) > 5 && f.Type[0:5] == "chan ":
+			typeType = FieldTypeChan
 		default:
 			switch len(strings.Split(f.Type, ".")) {
 			case 1:
