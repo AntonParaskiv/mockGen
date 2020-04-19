@@ -82,6 +82,9 @@ func (i *Interactor) createArrayExampleValue(field *domain.Field) {
 	itemType := field.Type[2:]
 	subField := &domain.Field{Type: itemType, Name: itemType + "Example"}
 	i.createFieldExampleValue(subField)
+	if len(subField.ExampleValue) == 0 {
+		return
+	}
 	field.ExampleValue = fmt.Sprintf("%s{\n", field.Type)
 	field.ExampleValue += fmt.Sprintf("	%s,\n", subField.ExampleValue)
 	field.ExampleValue += fmt.Sprintf("}")
