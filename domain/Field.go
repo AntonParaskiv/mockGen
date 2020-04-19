@@ -62,6 +62,10 @@ func (f *Field) GetTypeType() (typeType int64) {
 			typeType = FieldTypeMap
 		case len(f.Type) > 1 && f.Type[0] == '*':
 			typeType = FieldTypePointer
+		case len(f.Type) > 5 && f.Type[0:5] == "chan ":
+			typeType = FieldTypeChan
+		case len(f.Type) > 3 && f.Type[0:3] == "...":
+			typeType = FieldTypeEllipsis
 		default:
 			switch len(strings.Split(f.Type, ".")) {
 			case 1:
@@ -96,6 +100,24 @@ func (f *Field) GetTypeName() (typeName string) {
 		return
 	}
 	typeName = f.Type[separatorIndex+1:]
+	return
+}
+
+func (f *Field) GetNameViewArg() (nameView string) {
+	if f.GetTypeType() == FieldTypeEllipsis {
+		nameView = f.Name + "..."
+	} else {
+		nameView = f.Name
+	}
+	return
+}
+
+func (f *Field) GetTypeViewStructField() (typeView string) {
+	if f.GetTypeType() == FieldTypeEllipsis {
+		typeView = "[]" + f.Type[3:]
+	} else {
+		typeView = f.Type
+	}
 	return
 }
 

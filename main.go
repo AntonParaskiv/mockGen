@@ -20,6 +20,7 @@ func main() {
 	interfacePackagePath, err := filepath.Abs(os.Args[1])
 	if err != nil {
 		err = fmt.Errorf("get absolute interface package path failed: %w", err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
@@ -42,16 +43,19 @@ func main() {
 	astPackage, err := codeStorage.GetAstPackage(interfacePackagePath)
 	if err != nil {
 		err = fmt.Errorf("get ast package failed: %w", err)
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 	if astPackage == nil {
 		err = fmt.Errorf("ast package not found")
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	interfacePackage, err := astRepository.CreateInterfacePackage(astPackage, interfacePackagePath)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	mockPackage := interactor.CreateMockPackage(interfacePackage)
@@ -59,7 +63,8 @@ func main() {
 
 	err = codeStorage.SaveGoPackage(mockPackage)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	return

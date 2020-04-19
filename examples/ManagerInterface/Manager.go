@@ -10,11 +10,12 @@ type Rune rune
 type Byte byte
 
 type Manager interface {
+	SetCurrentProfile(currentProfile int64)
 	//RegistrationBasic(isAdult bool, nickName string) (accountId int64, userId uint64, xVar uintptr, complex complex128, sign rune, flags byte)
 	//RegistrationBasicPointer(isAdult *bool, nickName *string) (accountId *int64, userId *uint64, xVar *uintptr, complex *complex128, sign *rune, flags *byte)
 	//RegistrationBasicArray(isAdult []bool, nickName []string) (accountId []int64, userId []uint64, xVar []uintptr, complex []complex128, sign []rune, flags []byte)
 	//RegistrationBasicPointerArray(isAdult []*bool, nickName []*string) (accountId []*int64, userId []*uint64, xVar []*uintptr, complex []*complex128, sign []*rune, flags []*byte)
-	RegistrationBasicMap(isAdult map[bool]bool, nickName map[string]string) (accountId map[int64]int64, userId map[uint64]uint64, xVar map[uintptr]uintptr, complex map[complex128]complex128, sign map[rune]rune, flags map[byte]byte)
+	//RegistrationBasicMap(isAdult map[bool]bool, nickName map[string]string) (accountId map[int64]int64, userId map[uint64]uint64, xVar map[uintptr]uintptr, complex map[complex128]complex128, sign map[rune]rune, flags map[byte]byte)
 	//RegistrationBasicMapPointer(isAdult map[bool]*bool, nickName map[string]*string) (accountId map[int64]*int64, userId map[uint64]*uint64, xVar map[uintptr]*uintptr, complex map[complex128]*complex128, sign map[rune]*rune, flags map[byte]*byte)
 	//RegistrationBasicCustom(isAdult Bool, nickName String) (accountId Int64, userId Uint64, xVar UintPtr, complex Complex128, sign Rune, flags Byte)
 
