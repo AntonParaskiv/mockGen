@@ -29,6 +29,8 @@ func (i *Interactor) createFieldExampleValue(field *domain.Field) {
 			i.createArrayExampleValue(field)
 		case domain.FieldTypeMap:
 			i.createMapExampleValue(field)
+		case domain.FieldTypeStruct:
+			i.createStructExampleValue(field)
 		case domain.FieldTypeImportedCustomType:
 			i.createImportedCustomExampleValue(field)
 		//case domain.FieldTypeLocalCustomType:
@@ -104,6 +106,30 @@ func (i *Interactor) createMapExampleValue(field *domain.Field) {
 	field.CodeImportList = append(field.CodeImportList, valueField.CodeImportList...)
 }
 
+func (i *Interactor) createStructExampleValue(Struct *domain.Field) {
+	fieldList := Struct.GetStructFieldList()
+	field := i.getFirstBasicTypeField(fieldList)
+	if field == nil {
+		Struct.ExampleValue = fmt.Sprintf("{}")
+		return
+	}
+
+	i.createFieldExampleValue(field)
+	Struct.ExampleValue = fmt.Sprintf("{\n")
+	Struct.ExampleValue += fmt.Sprintf("	%s: %s,\n", field.Name, field.ExampleValue)
+	Struct.ExampleValue += fmt.Sprintf("}")
+}
+
+func (i *Interactor) getFirstBasicTypeField(fieldList []*domain.Field) (field *domain.Field) {
+	for _, fieldItem := range fieldList {
+		if fieldItem.GetTypeGroup() > 0 {
+			field = fieldItem
+			return
+		}
+	}
+	return
+}
+
 func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 	// check self import
 	//for _, Import := range field.CodeImportList {
@@ -130,6 +156,14 @@ func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 			field.TestImportList = append(field.TestImportList, Import)
 		}
 	}
+	if len(packagePath) == 0 {
+		for _, Import := range i.mockFile.ImportList {
+			if Import.GetCallingName() == importKey {
+				packagePath = Import.Path
+				field.TestImportList = append(field.TestImportList, Import)
+			}
+		}
+	}
 
 	baseType, err := i.AstRepository.GetTypeFieldFromPackagePath(packagePath, typeName)
 	if err != nil {
@@ -139,7 +173,12 @@ func (i *Interactor) createImportedCustomExampleValue(field *domain.Field) {
 	}
 	i.createFieldExampleValue(baseType)
 	field.BaseType = baseType
-	field.ExampleValue = fmt.Sprintf("%s(%s)", field.Type, field.BaseType.ExampleValue)
+	if field.BaseType.GetTypeType() == domain.FieldTypeStruct {
+		field.ExampleValue = fmt.Sprintf("%s%s", field.Type, field.BaseType.ExampleValue)
+	} else {
+		field.ExampleValue = fmt.Sprintf("%s(%s)", field.Type, field.BaseType.ExampleValue)
+	}
+
 	field.TestImportList = append(field.TestImportList, baseType.CodeImportList...)
 }
 
@@ -191,6 +230,7 @@ func (i *Interactor) createPointerExampleValue(field *domain.Field) {
 	case domain.FieldTypeArray:
 	case domain.FieldTypeMap:
 	case domain.FieldTypeImportedCustomType:
+		field.ExampleValue = `&` + baseField.ExampleValue
 	case domain.FieldTypeLocalCustomType:
 	//case domain.FieldTypeInterface:
 	//case domain.FieldTypePointer:

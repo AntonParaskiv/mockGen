@@ -14,7 +14,9 @@ func getNodeName(node ast.Node) (name string) {
 	case *ast.TypeSpec:
 		name = nodeItem.Name.Name
 	case *ast.Field:
-		name = nodeItem.Names[0].Name
+		if len(nodeItem.Names) > 0 {
+			name = nodeItem.Names[0].Name
+		}
 	case *ast.Ident:
 		name = nodeItem.Name
 	case *ast.ImportSpec:

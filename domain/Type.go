@@ -26,6 +26,7 @@ const (
 	FieldTypeError
 	FieldTypeArray
 	FieldTypeMap
+	FieldTypeStruct
 	FieldTypeImportedCustomType
 	FieldTypeLocalCustomType
 	FieldTypePointer

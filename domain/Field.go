@@ -60,6 +60,10 @@ func (f *Field) GetTypeType() (typeType int64) {
 			typeType = FieldTypeArray
 		case len(f.Type) >= 4 && f.Type[0:4] == "map[":
 			typeType = FieldTypeMap
+		case len(f.Type) >= 7 && f.Type[0:7] == "struct ":
+			fallthrough
+		case len(f.Type) >= 7 && f.Type[0:7] == "struct{":
+			typeType = FieldTypeStruct
 		case len(f.Type) > 1 && f.Type[0] == '*':
 			typeType = FieldTypePointer
 		case len(f.Type) > 5 && f.Type[0:5] == "chan ":
@@ -133,5 +137,31 @@ func (f *Field) GetGotName() (gotName string) {
 
 func (f *Field) GetNameType() (nameType string) {
 	nameType = f.Name + " " + f.Type
+	return
+}
+
+func (f *Field) GetStructFieldList() (fieldList []*Field) {
+	typeBody := f.Type[9 : len(f.Type)-2]
+	fieldStringList := strings.Split(typeBody, "\n")
+	for _, fieldString := range fieldStringList {
+		fieldString = strings.Trim(fieldString, " \t\r\n")
+		fieldItems := strings.Split(fieldString, " ")
+
+		var fieldName, fieldType string
+		switch len(fieldItems) {
+		case 2:
+			fieldName = fieldItems[0]
+			fieldType = fieldItems[1]
+		case 1:
+			fieldType = fieldItems[0]
+		}
+
+		field := &Field{
+			Name: fieldName,
+			Type: fieldType,
+		}
+		fieldList = append(fieldList, field)
+
+	}
 	return
 }
